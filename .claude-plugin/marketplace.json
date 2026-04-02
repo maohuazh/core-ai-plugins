@@ -1,18 +1,23 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "core-ai-plugins-official",
-  "description": "Not just configs. An AI-augmented development system.",
+  "owner": {
+    "name": "murphy",
+    "email": "maohua.zh@gmail.com"
+  },
+  "metadata": {
+    "description": "Not just configs. An AI-augmented development system."
+  },
   "plugins": [
     {
       "name": "holistic-dev",
       "description": "全面的功能开发工作流，配备专门的代理用于需求分析、Prompt优化、代码库探索、架构设计和质量审查.",
+      "source": "./holistic-dev",
+      "category": "coding",
       "author": {
         "name": "murphy",
         "email": "maohua.zh@gmail.com"
       },
-      "source": "./holistic-dev",
-      "category": "coding",
-      "homepage": "https://github.com/maohuazh/core-ai-plugins/tree/main/feature-dev"
+      "homepage": "https://github.com/maohuazh/core-ai-plugins/tree/main/holistic-dev"
     }
   ]
 }
