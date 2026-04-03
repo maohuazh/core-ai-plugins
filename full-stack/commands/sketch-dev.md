@@ -1,21 +1,27 @@
 ---
 name: sketch-dev
-description: 4阶段精简开发流程，适合中小型功能
+description: 快速交付中小型功能，4阶段精简流程（探索→规划→实现→审查）
 triggers:
   - /sketch-dev <功能描述>
 parameters:
   - name: 功能描述
     required: true
-    description: 要开发的功能简述
+    description: 功能简述，如"添加用户登录日志记录"
   - name: --skip-review
-    description: 跳过代码审查阶段
+    description: 跳过代码审查阶段（紧急修复场景）
   - name: --include-test
-    description: 包含测试生成
+    description: 自动生成测试用例并验证
 ---
 
 # Sketch Dev 精简开发流程
 
-4阶段快速开发，适合需求明确的中小型功能。
+4阶段快速开发，适合需求明确、改动范围可控的中小型功能。
+
+## 适用场景
+
+- 功能边界清晰的中小型需求
+- 紧急修复或小范围重构
+- 已有明确实现思路的任务
 
 ## 执行阶段
 

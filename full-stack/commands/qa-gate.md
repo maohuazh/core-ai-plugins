@@ -1,6 +1,6 @@
 ---
 name: qa-gate
-description: 全量质量门禁检查，PR提交前、发布前执行
+description: 执行全量质量门禁检查，确保代码符合发布标准（测试→覆盖率→安全→性能→架构）
 triggers:
   - /qa-gate
   - /qa-gate <路径>
@@ -8,17 +8,18 @@ parameters:
   - name: 路径
     description: 检查范围，默认当前目录
   - name: --coverage-threshold
-    description: 覆盖率阈值 (核心90/重要80/一般60)
+    description: 覆盖率阈值，格式为"核心/重要/一般"
+    default: "90/80/60"
   - name: --fail-fast
-    description: 首个阻塞项即停止
+    description: 首个阻塞项即终止检查
   - name: --output
-    description: 报告输出路径
+    description: 质量报告输出路径
     default: quality-report.md
 ---
 
 # QA Gate 质量门禁
 
-全量质量检查流水线，确保代码质量达标。
+全量质量检查流水线，在PR提交或发布前执行，确保代码质量达标。
 
 ## 执行阶段
 

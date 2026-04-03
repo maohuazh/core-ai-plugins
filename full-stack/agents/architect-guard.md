@@ -1,6 +1,6 @@
 ---
 name: architect-guard
-description: 架构守护，检测分层违规、循环依赖、接口污染
+description: 架构守护，检测分层违规、循环依赖、接口污染与职责越界
 tools:
   - Glob
   - Grep
@@ -8,18 +8,28 @@ tools:
 output_schema:
   type: object
   properties:
+    summary:
+      type: object
+      properties:
+        total_violations:
+          type: integer
+        by_type:
+          type: object
     violations:
       type: array
       items:
         properties:
           type:
             type: string
-            enum: [layer_violation, circular_dependency, interface_pollution, responsibility_overflow]
+            enum: [layer_violation, circular_dependency, interface_pollution, responsibility_overflow, forbidden_import]
+          severity:
+            type: string
+            enum: [critical, high, medium, low]
           location:
             type: string
           description:
             type: string
-          fix_path:
+          fix_suggestion:
             type: string
 ---
 
@@ -27,54 +37,89 @@ output_schema:
 
 确保代码遵循架构约束，检测违规与边界突破。
 
-## 检查维度
+## 分层架构规则
 
-**分层违规**
-- infrastructure直接访问domain
-- domain依赖外部包
-- 跨层直接调用（绕过边界）
+```
+┌─────────────────────────────────────┐
+│           api/interface            │  ← 入口层
+├─────────────────────────────────────┤
+│            application             │  ← 用例编排
+├─────────────────────────────────────┤
+│              domain                │  ← 业务核心（无外部依赖）
+├─────────────────────────────────────┤
+│          infrastructure            │  ← 外部适配
+└─────────────────────────────────────┘
 
-**循环依赖**
-- 模块间双向依赖
-- 包间循环引用
-- 服务间相互调用
+依赖方向: 上层 → 下层
+反向依赖: 通过接口/事件解耦
+```
 
-**接口污染**
-- 接口承担多职责
-- 接口过于宽泛
+## 违规检测规则
+
+### 分层违规
+```go
+// 违规: infrastructure 直接依赖 domain 内部
+// ✗ repo.user.validateEmail()
+// ✓ user.ValidateEmail()
+
+// 违规: domain 导入外部包
+// ✗ import "github.com/external/lib"
+// ✓ 通过接口抽象
+```
+
+### 循环依赖
+```
+检测方法: 依赖图DFS遍历
+违规模式: A → B → C → A
+修复方案: 引入事件/接口解耦
+```
+
+### 接口污染
+- 接口方法数 > 10（职责过多）
 - 接口暴露实现细节
+- 接口承担多职责
 
-**职责越界**
-- 类承担过多职责
-- 函数跨领域操作
+### 职责越界
+- 类方法数 > 15
+- 函数行数 > 50
 - 数据模型混合用途
 
-## 分层规则
+## 严重度评估
 
-```
-domain        → 无外部依赖
-application   → 仅依赖domain
-infrastructure → 可依赖domain/application
-api/interface → 仅依赖application
-```
+| 类型 | 严重度 | 说明 |
+|------|--------|------|
+| circular_dependency | Critical | 编译失败/运行时错误 |
+| layer_violation | High | 破坏架构边界 |
+| forbidden_import | High | 违反依赖规则 |
+| interface_pollution | Medium | 设计不清晰 |
+| responsibility_overflow | Medium | 可维护性下降 |
 
 ## 输出模板
 
 ```markdown
-## 架构违规报告
+## 架构违规摘要
 
-### 分层违规
-**src/infra/db/user_repo.go:15**
-- 问题: Repository直接引用domain.User内部方法
-- 修复: 通过domain公开接口访问
+| 类型 | 数量 | 严重度 |
+|------|------|--------|
+| 分层违规 | 2 | High |
+| 循环依赖 | 1 | Critical |
+| 接口污染 | 3 | Medium |
 
-### 循环依赖
-**src/app/order_service.go ↔ src/domain/order.go**
-- 问题: 双向import导致循环
-- 修复: 引入事件/接口解耦
+## 违规详情
 
-### 职责越界
-**src/domain/user.go:89**
-- 问题: User实体包含发送邮件逻辑
-- 修复: 邮件发送移至application层
+### [Critical] 循环依赖
+**位置**: src/app/order_service.go ↔ src/domain/order.go
+**描述**: 双向 import 导致编译失败
+**修复**: 引入事件机制解耦
+```go
+// order_service.go
+type OrderService struct {
+    eventBus *EventBus // 替代直接依赖
+}
+```
+
+### [High] 分层违规
+**位置**: src/infra/db/user_repo.go:15
+**描述**: Repository 直接调用 domain.User 内部方法
+**修复**: 通过 domain 公开接口访问
 ```

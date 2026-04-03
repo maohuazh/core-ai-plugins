@@ -1,24 +1,31 @@
 ---
 name: holistic-dev
-description: 9阶段全面开发流程，适合复杂功能与跨系统开发
+description: 深度交付复杂功能，9阶段全流程（需求澄清→探索→分析→规划→评审→实现→测试→审查→整合）
 triggers:
   - /holistic-dev <功能描述>
 parameters:
   - name: 功能描述
     required: true
-    description: 要开发的功能详述
+    description: 功能详述，如"实现多租户权限系统"
   - name: --skip-clarify
-    description: 跳过需求澄清阶段
+    description: 跳过需求澄清阶段（需求已明确时使用）
   - name: --include-test
-    description: 包含测试生成与验证
+    description: 包含测试生成与验证阶段
   - name: --depth
-    description: 探索深度 (shallow|medium|deep)
+    description: 代码探索深度
     default: medium
 ---
 
 # Holistic Dev 全面开发流程
 
 9阶段深度开发，适合复杂功能、跨系统、需深度分析的场景。
+
+## 适用场景
+
+- 跨多个模块的复杂功能
+- 涉及架构调整的需求
+- 需要深度技术分析的改动
+- 与现有系统有复杂交互的功能
 
 ## 执行阶段
 

@@ -1,19 +1,19 @@
 ---
 name: db-migrate
-description: 数据库迁移脚本生成与版本追踪
+description: 生成数据库迁移脚本（含回滚），支持版本追踪与依赖分析
 triggers:
   - /db-migrate <变更描述>
 parameters:
   - name: 变更描述
     required: true
-    description: Schema变更说明
+    description: Schema变更说明，如"添加用户登录日志表"
   - name: --type
     description: 迁移类型 (create|alter|drop)
 ---
 
 # DB Migrate 数据库迁移
 
-生成数据库迁移脚本，支持版本追踪与回滚。
+生成数据库迁移脚本，包含升级与回滚脚本，支持版本追踪。
 
 ## 执行流程
 

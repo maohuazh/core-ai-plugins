@@ -1,6 +1,6 @@
 ---
 name: security-scan
-description: 全量安全扫描，检测漏洞与敏感信息泄露
+description: 执行安全漏洞扫描，检测代码缺陷与敏感信息泄露风险
 triggers:
   - /security-scan
   - /security-scan <路径>
@@ -8,19 +8,19 @@ parameters:
   - name: 路径
     description: 扫描范围，默认当前目录
   - name: --severity
-    description: 最低严重级别 (critical|high|medium|low)
+    description: 最低报告级别 (critical|high|medium|low)
     default: medium
   - name: --include-deps
-    description: 包含依赖漏洞检查
+    description: 扫描依赖漏洞
     default: true
   - name: --include-secrets
-    description: 包含敏感信息检测
+    description: 检测硬编码敏感信息
     default: true
 ---
 
 # Security Scan 安全扫描
 
-全面安全检查，识别潜在风险。
+全面安全检查，识别潜在安全风险，建议在发布前或定期执行。
 
 ## 检查维度
 

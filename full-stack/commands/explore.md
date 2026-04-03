@@ -1,12 +1,12 @@
 ---
 name: explore
-description: 代码库探索，理解现有架构与关键路径
+description: 深度探索代码库，输出架构层次、执行路径与必读文件清单
 triggers:
   - /explore <目标>
 parameters:
   - name: 目标
     required: true
-    description: 要探索的模块/功能
+    description: 要探索的模块或功能，如"用户认证模块"
   - name: --depth
     description: 探索深度 (shallow|medium|deep)
     default: medium
@@ -14,7 +14,7 @@ parameters:
 
 # Explore 代码探索
 
-深度分析代码库，输出架构理解与必读文件清单。
+深度分析代码库，快速理解现有架构与关键执行路径。
 
 ## 执行流程
 

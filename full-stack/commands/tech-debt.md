@@ -1,6 +1,6 @@
 ---
 name: tech-debt
-description: 技术债务盘点，识别待重构区域与过时依赖
+description: 盘点技术债务，识别代码异味、过时依赖与重构优先级
 triggers:
   - /tech-debt
 parameters:
@@ -8,13 +8,13 @@ parameters:
     description: 盘点范围 (code|deps|all)
     default: all
   - name: --output
-    description: 输出文件路径
+    description: 报告输出路径
     default: tech-debt-report.md
 ---
 
 # Tech Debt 技术债务盘点
 
-系统性识别技术债务，为重构规划提供依据。
+系统性识别技术债务，为迭代规划与重构决策提供依据。
 
 ## 盘点维度
 

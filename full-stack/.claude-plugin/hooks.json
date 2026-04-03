@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "pre-commit": {
+      "commands": ["security-scan --severity=high", "review --dimensions=bug,security"],
+      "fail_fast": true,
+      "timeout": 120
+    },
+    "pre-push": {
+      "commands": ["qa-gate --fail-fast"],
+      "fail_fast": true,
+      "timeout": 300
+    },
+    "post-merge": {
+      "commands": ["tech-debt --scope=code"],
+      "async": true
+    },
+    "pre-pr": {
+      "commands": ["qa-gate", "pr-ready"],
+      "fail_fast": true,
+      "timeout": 300
+    }
+  },
+  "workflow_presets": {
+    "standard": ["plan", "implement", "test-gen", "review", "qa-gate", "pr-ready"],
+    "quick": ["sketch-dev", "pr-ready"],
+    "comprehensive": ["holistic-dev", "qa-gate", "deploy-prep"],
+    "hotfix": ["explore", "implement", "security-scan", "pr-ready"]
+  }
+}

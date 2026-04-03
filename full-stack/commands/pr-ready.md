@@ -1,6 +1,6 @@
 ---
 name: pr-ready
-description: PR就绪检查，确保代码符合合并标准
+description: 执行PR就绪检查，验证代码符合合并标准并生成PR模板
 triggers:
   - /pr-ready
   - /pr-ready <分支>
@@ -8,7 +8,7 @@ parameters:
   - name: 分支
     description: 目标分支，默认main
   - name: --coverage-threshold
-    description: 覆盖率阈值
+    description: 覆盖率阈值百分比
     default: 80
   - name: --skip-test
     description: 跳过测试执行
@@ -16,7 +16,7 @@ parameters:
 
 # PR Ready 就绪检查
 
-创建PR前的完整检查清单。
+创建PR前的完整检查清单，确保代码符合团队规范与质量标准。
 
 ## 检查项
 
