@@ -1,0 +1,18 @@
+{
+  "name": "full-stack",
+  "version": "1.0.0",
+  "description": "全栈工程师插件系统，融合架构设计、开发体验优化与质量保障三大核心维度，包含15个核心命令与10个专业代理.",
+  "author": {
+    "name": "murphy",
+    "email": "maohua.zh@gmail.com"
+  },
+  "repository": "https://github.com/maohuazh/core-ai-plugins.git",
+  "license": "MIT",
+  "keywords": [
+    "core-ai",
+    "core-ng",
+    "core-ai-plugins",
+    "full-stack",
+    "qa-gate"
+  ]
+}
