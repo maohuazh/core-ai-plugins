@@ -18,6 +18,17 @@
         "email": "maohua.zh@gmail.com"
       },
       "homepage": "https://github.com/maohuazh/core-ai-plugins/tree/main/holistic-dev"
+    },
+    {
+      "name": "core-ng",
+      "description": "新一代开发工作流，提供规划、快速开发、实现三个命令，配备代码探索、架构设计、代码审查、测试验证四个代理.",
+      "source": "./core-ng",
+      "category": "coding",
+      "author": {
+        "name": "murphy",
+        "email": "maohu.zh@gmail.com"
+      },
+      "homepage": "https://github.com/maohuazh/core-ai-plugins/tree/main/core-ng"
     }
   ]
 }
