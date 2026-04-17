@@ -29,28 +29,21 @@ tools: Bash, Read, Grep, Glob
 ### Step 1: 从 Kibana 获取 Trace 样本
 
 **Kibana API 访问**
-
-优先使用 `mcp__kibana-local__execute_kb_api` MCP 工具执行查询。如果 MCP 工具不可用，回退到 curl 方式：
 - **代理路径**: `${KIBANA_URL}/api/console/proxy`
 - **必须携带**: `kbn-xsrf: true` 请求头
 - **所有查询通过代理路径转发**，不直接访问 Elasticsearch
 - {date} 中的 . 不需要转义，例如 2026.04.16。
+- **耗时单位**：毫秒
 
-1. 使用 Kibana MCP 工具 `mcp__kibana-local__execute_kb_api` 查询该错误分组的详细日志样本：
-   - 查询 `action-*` 索引获取该 app/action/error_code 组合的日志记录
-   - 提取 `trace_id` 字段
-   - 使用 `trace_id` 查询 `trace-*` 索引获取完整的 trace 链路
-   - 获取 3-5 个有代表性的 trace 样本（覆盖不同时间、不同参数）
-
-2. 备用 _doc 查询（当 Kibana MCP API 无效时）
-   - 使用 Kibana 的 Document API 直接获取该 trace 的完整文档。这比 `_search` 更高效。
-    **cURL 命令模板**：
+1. 使用 _doc 查询详细日志样本
+    - 使用 Kibana 的 Document API 直接获取该 trace 的完整文档。这比 `_search` 更高效。
+      **cURL 命令模板**：
     ```bash
     curl -s -X GET "${KIBANA_URL}/api/console/proxy?path=%2Ftrace-{date}%2F_doc%2F{trace_id}&method=GET"
     ```
 
-3. 备用 _search 查询（当 Document API 无效时）：
-   - 如果该 API 返回 404，说明该 trace_id 在 trace 索引中不存在。此时应尝试使用 _search 按 id 字段查询（因为 id 可能与 trace_id 字段值不同）。
+2. 备用 _search 查询（当 Document API 无效时）：
+    - 如果该 API 返回 404，说明该 trace_id 在 trace 索引中不存在。此时应尝试使用 _search 按 id 字段查询（因为 id 可能与 trace_id 字段值不同）。
     ```bash
     curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Ftrace-{date}%2F_search&method=GET" \
       -H "Content-Type: application/json" \

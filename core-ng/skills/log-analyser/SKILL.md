@@ -35,9 +35,9 @@ allowed-tools: Bash, Read, Write, Task
 
 **创建步骤**：
 1. 生成批次目录名：使用日期 + 简短任务描述（如 `2026-04-17_kafka-errors` 或 `2026-04-17_full-analysis`）
-2. 创建目录结构（包含 `sub-agent-reports/` 子目录）
+2. 创建目录结构（包含 `trace-analysis/` 子目录）
 3. 写入 `batch-info.json` 记录分析参数
-4. **将批次目录路径传递给所有子代理**，子代理的报告必须写入 `sub-agent-reports/` 目录
+4. **将批次目录路径传递给所有子代理**，子代理的报告必须写入 `trace-analysis/` 目录
 
 
 ## 环境与配置
@@ -79,9 +79,9 @@ allowed-tools: Bash, Read, Write, Task
 3. **应用过滤**: 所有查询必须携带 `app` 过滤，范围限定在 `KIBANA_APP` 配置的应用内
 4. **日期默认**: 用户未提供日期时查**当天**数据；未提供时间范围时查**过去 1 小时**
 5. **默认行为**: 用户无明确意图时，默认查询最近 1 小时 `result: ERROR` 的日志
-6. **跳过 ERROR 分析**: 若用户明确要求不分析 ERROR 日志，跳过步骤 2，直接进入步骤 3
-7. **分类标记**：基础设施（Kafka/MongoDB）、代码缺陷（NPE/查询异常）、外部依赖（Nautical/Stripe/Hubspot）、性能（慢查询/超时）
-8. **错误排序**：优先按严重程度排序, 无法区分时按错误频率排序
+6. **分类标记**：基础设施（Kafka/MongoDB）、代码缺陷（NPE/查询异常）、外部依赖（Nautical/Stripe/Hubspot）、性能（慢查询/超时）
+7. **错误排序**：优先按严重程度排序, 无法区分时按错误频率排序
+8. **耗时单位**：毫秒
 
 ## 主代理分析流程
 
@@ -104,7 +104,16 @@ allowed-tools: Bash, Read, Write, Task
 - 构造 Elasticsearch DSL 聚合查询，按 `app`、`action`、`error_code` 分组统计，每组取一个示例 `id` 和 `@timestamp`。
 - 批量查询所有索引，保存分组结果到 `error-groups.md`
 
-**DSL 示例**（通过 `mcp__kibana-local__execute_kb_api` 或 curl 执行）：
+**通过 curl 执行**
+
+```bash
+curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_search&method=GET" \
+  -H 'kbn-xsrf: true' \
+  -H 'Content-Type: application/json' \
+  -d '<DSL_JSON>'
+```
+
+**DSL 示例**
 
 ```json
 {
@@ -145,15 +154,6 @@ allowed-tools: Bash, Read, Write, Task
 }
 ```
 
-**curl 回退方式**（MCP 不可用时）：
-
-```bash
-curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_search&method=GET" \
-  -H 'kbn-xsrf: true' \
-  -H 'Content-Type: application/json' \
-  -d '<DSL_JSON>'
-```
-
 ### 步骤 2：生成分组清单与派发子代理
 
 解析聚合结果，生成 Markdown 表格呈现给用户：
@@ -177,7 +177,7 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 - timestamp: {timestamp}
 ```
 
-**并发策略**: 尽可能并发调用多个子代理。若分组超过 20 个，先输出统计清单并询问用户："共发现 N 种错误分组，是否需要全部分析？或仅分析 Top 10？"
+**并发策略**: 尽可能并发调用多个子代理。先输出统计清单并询问用户："共发现 N 种错误分组，是否需要全部分析？或仅分析 Top 10？"
 
 ### 步骤 3：汇总报告
 
@@ -193,7 +193,7 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 - **错误请求总数**: {total_errors}
 - **受影响的应用数**: {app_count}
 - **高频错误分组 Top 5**:
-  1. `{app}/{action}/{error_code}` - {count} 次
+    1. `{app}/{action}/{error_code}` - {count} 次
 
 ## 分组深度分析
 (依次插入子代理报告)
