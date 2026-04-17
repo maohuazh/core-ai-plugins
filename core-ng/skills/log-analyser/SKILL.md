@@ -24,7 +24,7 @@ allowed-tools: Bash, Read, Write, Task
 **每次分析任务开始时，主代理必须创建统一的批次目录**，所有后续报告文件都写入该目录：
 
 ```
-.claude/logs/{YYYYMMDDHH:mm}_{task-slug}/
+.claude/logs/{YYYYMMDDHHmm}_{task-slug}/
     batch-info.json          # 批次元信息（时间范围、应用、分析目标）
     error-groups.md          # 错误分组统计结果
     trace-analysis/          # 详细分析报告
@@ -172,7 +172,7 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 
     ```
     调用 trace-analyzer 代理：
-    - batch_dir: .claude/logs/{YYYYMMDDHH:mm}_{task-slug}/
+    - batch_dir: .claude/logs/{YYYYMMDDHHmm}_{task-slug}/
     - trace_id: {sample_trace_id}
     - date: {index_date}  (格式: YYYY.MM.DD，如 2026.04.17)
     - app: {app}

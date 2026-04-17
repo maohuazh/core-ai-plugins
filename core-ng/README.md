@@ -2,6 +2,55 @@
 
 Claude Code 插件：Kibana 日志分析工具集。
 
+## 安装
+
+此插件仓库包含 `.claude-plugin/`、`.codex/`、`.opencode/` 等标准目录，各工具按自身机制加载。
+
+### Claude Code
+
+```bash
+# 方式一：通过 /plugin 命令安装
+/plugin marketplace add <your-marketplace-url-or-git-path>
+/plugin install core-ng
+
+# 方式二：直接克隆后本地加载
+git clone <repo-url> /path/to/core-ai-plugins
+# 然后在 Claude Code 项目中指向路径
+```
+
+### Codex CLI
+
+```bash
+# 克隆后建立 skills 软链接
+git clone <repo-url> ~/.codex/core-ng
+
+# macOS / Linux
+mkdir -p ~/.agents/skills
+ln -s ~/.codex/core-ng/core-ng/skills ~/.agents/skills/core-ng
+
+# Windows (PowerShell)
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
+cmd /c mklink /J "$env:USERPROFILE\.agents\skills\core-ng" "$env:USERPROFILE\.codex\core-ng\core-ng\skills"
+```
+
+> 重启 Codex 后即可生效。
+
+### OpenCode
+
+在项目根目录或全局 `opencode.json` 中添加 plugin：
+
+```json
+{
+  "plugin": [
+    "core-ng@git+https://github.com/maohuazh/core-ai-plugins.git#main"
+  ]
+}
+```
+
+重启 OpenCode 后自动安装并注册 skills。
+
+> **版本锁定**：将 `#main` 替换为具体 tag，如 `#v1.0.0`。
+
 ## 功能
 
 通过 Kibana API 对微服务日志进行聚合分组、样本派发和根因分析，生成结构化的错误报告。
@@ -52,7 +101,7 @@ log-analyser (主代理)
 
 ## 输出
 
-每次分析生成一个批次目录 `.claude/logs/{YYYYMMDDHH:mm}_{task-slug}/`，包含：
+每次分析生成一个批次目录 `.claude/logs/{YYYYMMDDHHmm}_{task-slug}/`，包含：
 
 - `batch-info.json` — 批次元信息
 - `error-groups.md` — 错误分组统计
