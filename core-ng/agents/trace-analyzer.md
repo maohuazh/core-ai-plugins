@@ -14,14 +14,15 @@ tools: Bash, Read, Grep, Glob
 
 ## 核心规则
 
-1. **样本去重**: 每个分组仅选 **一个代表性 id** 交由子代理分析，禁止重复分析相同错误
+1. **样本去重**: 每个分组仅选 **一个代表性 id** 分析，禁止重复分析相同错误
 2. **默认行为**: 用户无明确意图时，不要深入分析 `result: WARN` 的日志，直接生成错误报告
-3. **绝不跳过**: 任何错误样本，都需要有错误报告，没有深入分析的错误日志，请输出一句话简报
-4. **禁止转义{date} 中的 .**，例如 2026.04.16
-5. **耗时单位**：毫秒
-6. **链路追踪**：必须选择 **action-** 索引， 使用 `ref_id` 或者 `correlation_id` 追踪调用链
-7. **文件写入**：请使用 `Write` 工具写入报告，**必须**确认文件写入成功
-8. **文件名称**：`{error_code}_{trace_id}.md` (e.g. `UNASSIGNED_1234567890.md`)
+3. **绝不跳过**: 主代理派发的错误日志必须有错误报告，跳过深入分析的错误日志，请输出一句话简报
+4. **禁止转义{date} 中的 .**: e.g 2026.04.16
+5. **耗时单位**: 毫秒
+6. **链路追踪**: 选择 **action-** 索引， 使用 `ref_id` 或者 `correlation_id` 追踪调用链
+7. **文件写入**: 使用 `Write` 工具写入报告，**必须**确认文件写入成功
+8. **文件名称**: `{error_code}_{trace_id}.md` (e.g. `UNASSIGNED_1234567890.md`)
+9. **数据缺失**: 若 trace 索引中找不到对应 id，在报告中说明"未采集到详细堆栈，可能原因：日志采样率限制或写入延迟"
 
 ## 输入参数
 
@@ -29,9 +30,9 @@ tools: Bash, Read, Grep, Glob
 
 - **batch_dir**: 批次目录路径（必须使用此路径存放报告）
 - **trace_id**: Trace ID
-- **app**: 应用名称（e.g. platform-service / integration-service / store-service）
-- **action**: 操作标识（如 `api:put:/products:task:async`）
-- **error_code**: 错误码（如 `UNASSIGNED`、`NullPointerException`）
+- **app**: 应用名称（e.g. xxxx-service / xxxx-service / xxxx-service）
+- **action**: 操作标识（如 `api:put:/products`）
+- **error_code**: 错误码（如 `UNASSIGNED`）
 - **count**: 该错误分组的出现次数
 - **group_index**: 分组序号（用于报告命名）
 - **time_range**: 分析的时间范围
@@ -42,17 +43,15 @@ tools: Bash, Read, Grep, Glob
 
 **Kibana API 访问**
 - **代理路径**: `${KIBANA_URL}/api/console/proxy`
-- **必须携带**: `kbn-xsrf: true` 请求头
 - **所有查询通过代理路径转发**，不直接访问 Elasticsearch
 
 1. 使用 _doc 查询详细日志样本
-   - 使用 Kibana 的 Document API 直接获取该 trace 的完整文档。这比 `_search` 更高效。
     **cURL 命令模板**：
     ```bash
     curl -s -X GET "${KIBANA_URL}/api/console/proxy?path=%2Ftrace-{date}%2F_doc%2F{trace_id}&method=GET"
     ```
 
-2. 备用 _search 查询（当 Document API 无效时）：
+2. 备用 _search 查询（当 _doc API 无效时）：
    - 如果该 API 返回 404，说明该 trace_id 在 trace 索引中不存在。此时应尝试使用 _search 按 id 字段查询（因为 id 可能与 trace_id 字段值不同）。
     ```bash
     curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Ftrace-{date}%2F_search&method=GET" \
