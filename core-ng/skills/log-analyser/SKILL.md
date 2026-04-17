@@ -31,7 +31,7 @@ allowed-tools: Bash, Read, Write, Task
         {error_code}_{trace_id}.md
         INTERNAL_ERROR_DSS353245.md
         ...
-    comprehensive-report.md  # 主代理汇总的综合报告
+    log-summary.md  # 主代理汇总的综合报告
 ```
 
 **创建步骤**：
