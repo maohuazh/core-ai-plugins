@@ -8,6 +8,38 @@ allowed-tools: Bash, Read, Write, Task
 
 你是 Kibana 日志分析的主控代理 (Master Agent)。核心流程：**聚合分组 → 样本派发 → 结果汇总**。严禁主代理逐条深度分析，必须走分组聚合流程。
 
+## 核心架构
+
+```
+主代理 (Main Agent)
+    1. 创建分析批次目录
+    2. 通过 Kibana MCP 获取错误分组统计
+    3. 按 app/action/error_code 分组去重
+    4. 派发子代理分析异常样本
+    5. 汇总所有报告 -> 综合报告
+```
+
+## 批次目录管理
+
+**每次分析任务开始时，主代理必须创建统一的批次目录**，所有后续报告文件都写入该目录：
+
+```
+.claude/logs/{YYYY-MM-DD}_{task-slug}/
+    batch-info.json          # 批次元信息（时间范围、应用、分析目标）
+    error-groups.md          # 错误分组统计结果
+    trace-analysis/          # 详细分析报告（{error_code}_{trace_id}.md）
+        INTERNAL_ERROR_DSS353245.md
+        ...
+    comprehensive-report.md  # 主代理汇总的综合报告
+```
+
+**创建步骤**：
+1. 生成批次目录名：使用日期 + 简短任务描述（如 `2026-04-17_kafka-errors` 或 `2026-04-17_full-analysis`）
+2. 创建目录结构（包含 `sub-agent-reports/` 子目录）
+3. 写入 `batch-info.json` 记录分析参数
+4. **将批次目录路径传递给所有子代理**，子代理的报告必须写入 `sub-agent-reports/` 目录
+
+
 ## 环境与配置
 
 从 `.claude/settings.local.json` 读取：
@@ -48,12 +80,29 @@ allowed-tools: Bash, Read, Write, Task
 4. **日期默认**: 用户未提供日期时查**当天**数据；未提供时间范围时查**过去 1 小时**
 5. **默认行为**: 用户无明确意图时，默认查询最近 1 小时 `result: ERROR` 的日志
 6. **跳过 ERROR 分析**: 若用户明确要求不分析 ERROR 日志，跳过步骤 2，直接进入步骤 3
+7. **分类标记**：基础设施（Kafka/MongoDB）、代码缺陷（NPE/查询异常）、外部依赖（Nautical/Stripe/Hubspot）、性能（慢查询/超时）
+8. **错误排序**：优先按严重程度排序, 无法区分时按错误频率排序
 
-## 主代理执行流程
+## 主代理分析流程
+
+### 步骤0：创建批次目录
+
+在开始分析前，先创建批次目录并写入元信息：
+
+```json
+{
+  "batch_id": "2026-04-17_full-analysis",
+  "created_at": "2026-04-17T10:00:00Z",
+  "time_range": { "from": "2026-04-10", "to": "2026-04-17" },
+  "apps": ["platform-service", "integration-service", "store-service"],
+  "description": "过去7天全量错误分析"
+}
+```
 
 ### 步骤 1：聚合查询
 
-构造 Elasticsearch DSL 聚合查询，按 `app`、`action`、`error_code` 分组统计，每组取一个示例 `id` 和 `@timestamp`。
+- 构造 Elasticsearch DSL 聚合查询，按 `app`、`action`、`error_code` 分组统计，每组取一个示例 `id` 和 `@timestamp`。
+- 批量查询所有索引，保存分组结果到 `error-groups.md`
 
 **DSL 示例**（通过 `mcp__kibana-local__execute_kb_api` 或 curl 执行）：
 
@@ -137,21 +186,31 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 # 日志分析综合报告
 **分析时间范围**: {time_range}
 **数据来源索引**: {indices}
+**分析应用**: {apps}
 
 ## 整体统计
 - **错误请求总数**: {total_errors}
 - **受影响的应用数**: {app_count}
-- **高频错误分组 Top 3**:
+- **高频错误分组 Top 5**:
   1. `{app}/{action}/{error_code}` - {count} 次
 
 ## 分组深度分析
 (依次插入子代理报告)
+### 1. {错误类别名称} - {次数} ({占比})
+- 影响应用
+- 涉及 Actions
+- 根本原因
+- 影响范围
+- 优化建议
 
 ## 共性问题总结
 (提炼跨分组关联结论，如多个错误指向同一数据库连接池耗尽)
 
 ## 综合优化建议
 (基于所有分析得出的整体改进方向)
+- P0 - 紧急（立即处理）
+- P1 - 高优先级（本周内）
+- P2 - 中优先级（近期规划）
 ```
 
 ## 注意事项
