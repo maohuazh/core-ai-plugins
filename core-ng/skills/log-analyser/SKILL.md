@@ -157,28 +157,29 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 
 ### 步骤 2：生成分组清单与派发子代理
 
-解析聚合结果，生成 Markdown 表格呈现给用户：
+1. 聚合模板：
+    ```markdown
+    | # | App | Action | Error Code | 次数 | 示例 trace_id |
+    |---|-----|--------|------------|------|---------------|
+    | 1 | platform-service | OrderV2Service.createOrder | ALERT_ERROR_INTERNAL_ERROR | 42 | abc123 |
+    ```
 
-```markdown
-| # | App | Action | Error Code | 次数 | 示例 trace_id |
-|---|-----|--------|------------|------|---------------|
-| 1 | platform-service | OrderV2Service.createOrder | ALERT_ERROR_INTERNAL_ERROR | 42 | abc123 |
-```
+2. 使用 `trace-analyzer` 子代理进行深度分析：
+   - **强制确认**: 先输出统计清单并询问用户："共发现 N 种错误分组，是否需要全部分析？"
+   - **绝不跳过**: 确认用户输入，将错误日志样本派发给子代理
+   - **样本去重**: 每个分组仅选 **一个代表性 id** 交由子代理分析，禁止重复分析相同错误
+   - **并发策略**: 不要超过5个子代理
 
-对每个分组使用 `trace-analyzer` 子代理进行深度分析：
-
-```
-调用 trace-analyzer 代理：
-- batch_dir: .claude/logs/{YYYYMMDDHH:mm}_{task-slug}/
-- trace_id: {sample_trace_id}
-- date: {index_date}  (格式: YYYY.MM.DD，如 2026.04.17)
-- app: {app}
-- action: {action}
-- error_code: {error_code}
-- timestamp: {timestamp}
-```
-
-**并发策略**: 尽可能并发调用多个子代理。先输出统计清单并询问用户："共发现 N 种错误分组，是否需要全部分析？"
+    ```
+    调用 trace-analyzer 代理：
+    - batch_dir: .claude/logs/{YYYYMMDDHH:mm}_{task-slug}/
+    - trace_id: {sample_trace_id}
+    - date: {index_date}  (格式: YYYY.MM.DD，如 2026.04.17)
+    - app: {app}
+    - action: {action}
+    - error_code: {error_code}
+    - timestamp: {timestamp}
+    ```
 
 ### 步骤 3：汇总报告
 
