@@ -24,17 +24,18 @@ allowed-tools: Bash, Read, Write, Task
 **每次分析任务开始时，主代理必须创建统一的批次目录**，所有后续报告文件都写入该目录：
 
 ```
-.claude/logs/{YYYY-MM-DD}_{task-slug}/
+.claude/logs/{YYYYMMDDHH:mm}_{task-slug}/
     batch-info.json          # 批次元信息（时间范围、应用、分析目标）
     error-groups.md          # 错误分组统计结果
-    trace-analysis/          # 详细分析报告（{error_code}_{trace_id}.md）
+    trace-analysis/          # 详细分析报告
+        {error_code}_{trace_id}.md
         INTERNAL_ERROR_DSS353245.md
         ...
     comprehensive-report.md  # 主代理汇总的综合报告
 ```
 
 **创建步骤**：
-1. 生成批次目录名：使用日期 + 简短任务描述（如 `2026-04-17_kafka-errors` 或 `2026-04-17_full-analysis`）
+1. 生成批次目录名：使用日期 + 简短任务描述（如 `202604171533_kafka-errors` 或 `202604171533_full-analysis`）
 2. 创建目录结构（包含 `trace-analysis/` 子目录）
 3. 写入 `batch-info.json` 记录分析参数
 4. **将批次目录路径传递给所有子代理**，子代理的报告必须写入 `trace-analysis/` 目录
@@ -48,7 +49,7 @@ allowed-tools: Bash, Read, Write, Task
 
 ### Kibana API 访问
 
-优先使用 `mcp__kibana-local__execute_kb_api` MCP 工具执行查询。如果 MCP 工具不可用，回退到 curl 方式：
+直接使用 curl 方式：
 - **代理路径**: `${KIBANA_URL}/api/console/proxy`
 - **必须携带**: `kbn-xsrf: true` 请求头
 - **所有查询通过代理路径转发**，不直接访问 Elasticsearch
@@ -79,7 +80,7 @@ allowed-tools: Bash, Read, Write, Task
 3. **应用过滤**: 所有查询必须携带 `app` 过滤，范围限定在 `KIBANA_APP` 配置的应用内
 4. **日期默认**: 用户未提供日期时查**当天**数据；未提供时间范围时查**过去 1 小时**
 5. **默认行为**: 用户无明确意图时，默认查询最近 1 小时 `result: ERROR` 的日志
-6. **分类标记**：基础设施（Kafka/MongoDB）、代码缺陷（NPE/查询异常）、外部依赖（Nautical/Stripe/Hubspot）、性能（慢查询/超时）
+6. **分类标记**：基础设施（Kafka/MongoDB）、代码缺陷（NPE/查询异常）、外部依赖、性能（慢查询/超时）
 7. **错误排序**：优先按严重程度排序, 无法区分时按错误频率排序
 8. **耗时单位**：毫秒
 
@@ -91,7 +92,7 @@ allowed-tools: Bash, Read, Write, Task
 
 ```json
 {
-  "batch_id": "2026-04-17_full-analysis",
+  "batch_id": "202604171533_full-analysis",
   "created_at": "2026-04-17T10:00:00Z",
   "time_range": { "from": "2026-04-10", "to": "2026-04-17" },
   "apps": ["platform-service", "integration-service", "store-service"],
@@ -168,7 +169,7 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 
 ```
 调用 trace-analyzer 代理：
-- batch_dir: .claude/logs/{YYYY-MM-DD}_{task-slug}/
+- batch_dir: .claude/logs/{YYYYMMDDHH:mm}_{task-slug}/
 - trace_id: {sample_trace_id}
 - date: {index_date}  (格式: YYYY.MM.DD，如 2026.04.17)
 - app: {app}
@@ -177,7 +178,7 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 - timestamp: {timestamp}
 ```
 
-**并发策略**: 尽可能并发调用多个子代理。先输出统计清单并询问用户："共发现 N 种错误分组，是否需要全部分析？或仅分析 Top 10？"
+**并发策略**: 尽可能并发调用多个子代理。先输出统计清单并询问用户："共发现 N 种错误分组，是否需要全部分析？"
 
 ### 步骤 3：汇总报告
 
@@ -193,7 +194,7 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 - **错误请求总数**: {total_errors}
 - **受影响的应用数**: {app_count}
 - **高频错误分组 Top 5**:
-    1. `{app}/{action}/{error_code}` - {count} 次
+  1. `{app}/{action}/{error_code}` - {count} 次
 
 ## 分组深度分析
 (依次插入子代理报告)
