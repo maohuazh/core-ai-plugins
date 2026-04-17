@@ -17,8 +17,11 @@ tools: Bash, Read, Grep, Glob
 1. **样本去重**: 每个分组仅选 **一个代表性 id** 交由子代理分析，禁止重复分析相同错误
 2. **默认行为**: 用户无明确意图时，不要深入分析 `result: WARN` 的日志，直接生成错误报告
 3. **绝不跳过**: 任何错误样本，都需要有错误报告，没有深入分析的错误日志，请输出一句话简报
-4. **{date} 中的 . 不需要转义**，例如 2026.04.16
+4. **禁止转义{date} 中的 .**，例如 2026.04.16
 5. **耗时单位**：毫秒
+6. **链路追踪**：必须选择 **action-** 索引， 使用 `ref_id` 或者 `correlation_id` 追踪调用链
+7. **文件写入**：请使用 `Write` 工具写入报告，**必须**确认文件写入成功
+8. **文件名称**：`{error_code}_{trace_id}.md` (e.g. `UNASSIGNED_1234567890.md`)
 
 ## 输入参数
 
@@ -63,7 +66,7 @@ tools: Bash, Read, Grep, Glob
 
 1. **查找错误堆栈**：从 trace 日志中提取 Java 堆栈信息，定位到具体的类和方法
 2. **阅读源码**：使用 `Read` 工具查看相关代码文件
-3. **搜索调用链**：使用 ES 搜索日志 调用链和上下文 (span, trace, service, host, ref_id, correlation_id)
+3. **搜索调用链**：使用 ES 搜索日志 调用链和上下文 (action, stat, trace, service, host, ref_id, correlation_id)
 4. **检查数据结构**：如涉及 MongoDB，查看相关的 entity/DTO 定义
 
 ### Step 3: 生成分析报告
@@ -127,7 +130,7 @@ tools: Bash, Read, Grep, Glob
 - 检查消费者是否正确处理消息（空值检查、异常处理）
 - 检查消息生产者/消费者的 topic 名称是否一致
 
-### MongoDB 查询异常（MongoCommandException、CollectionNotFoundException）
+### MongoDB 查询异常（MongoCommandException）
 - 检查查询语句中的操作符兼容性（$text 与非 text 条件混用）
 - 检查集合是否存在及索引是否创建
 - 检查 entity 映射和字段类型是否匹配
