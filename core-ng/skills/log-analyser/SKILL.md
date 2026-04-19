@@ -163,11 +163,16 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
    - **强制确认**: 先输出统计清单并询问用户："共发现 N 种错误, 是否需要全部分析?"
    - **绝不跳过**: 确认用户输入，将错误日志样本派发给子代理
    - **样本去重**: 每个分组仅选 **一个代表性 id** 交由子代理分析，禁止重复分析相同错误
-   - **并发策略**: 不要超过5个子代理
-   - **TODO List**: 创建子代理任务清单，子代理处理完成更新 TODO 列表
+   - **分批派发**: 最多 5 个子代理同时运行。将所有分组按每批 5 个划分，**对每一批**：
+     1. 创建 TODO List 任务
+     2. 并发派发该批子代理（最多 5 个）
+     3. **必须等待该批所有子代理全部完成，才能派发下一批**
+     4. 检查 `{batch_dir}/trace-analysis/` 下是否生成了对应数量的报告文件
+     5. 如有缺失，重新派发该缺失的子代理
+   - **全部批次完成后**，才能进入步骤 3
 
     ```
-    调用 trace-analyzer 代理：
+    调用 /core-ng:trace-analyzer 代理：
     - batch_dir: .claude/logs/{YYYYMMDDHHmm}_{task-slug}/
     - trace_id: {sample_trace_id}
     - date: {index_date}  (格式: YYYY.MM.DD，如 2026.04.17)
@@ -181,9 +186,9 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
 
 **汇总报告(log-summary.md)**
 - 没有派发子代理深度分析则生成简短报告
-- 确认子代理 TODO List 是否都已完成
-- 确认所有子代理返回结果
-- 确认子代理生成的报告文件没有缺失
+- 检查 `{batch_dir}/trace-analysis/` 下的报告文件数量，**必须等于**已确认要分析的错误分组数
+- **如有缺失**：立即重新派发缺失分组的子代理，等待完成后再次检查
+- 确认所有子代理 TODO List 标记为 completed
 
 **报告模板**
 
