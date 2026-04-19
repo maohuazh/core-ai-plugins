@@ -172,7 +172,7 @@ curl -s -X POST "${KIBANA_URL}/api/console/proxy?path=%2Faction-2026.04.17%2F_se
    - **全部批次完成后**，才能进入步骤 3
 
     ```
-    调用 /core-ng:trace-analyzer 代理：
+    调用 @core-ng:trace-analyzer 代理：
     - batch_dir: .claude/logs/{YYYYMMDDHHmm}_{task-slug}/
     - trace_id: {sample_trace_id}
     - date: {index_date}  (格式: YYYY.MM.DD，如 2026.04.17)
