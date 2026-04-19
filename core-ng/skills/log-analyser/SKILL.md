@@ -35,7 +35,7 @@ allowed-tools: Bash, Read, Write, Task
 ```
 
 **创建步骤**：
-1. 生成批次目录名：使用日期 + 简短任务描述（e.g `202604171533_kafka-errors`）
+1. 生成批次目录名：格式严格为 `YYYYMMDDHHmm_task-slug`（12位数字：年月日时分 + 下划线 + 任务描述），例如 `202604171533_kafka-errors`，**必须包含小时和分钟**
 2. 创建目录结构（包含 `trace-analysis/` 子目录）
 3. 写入 `batch-info.json` 记录分析参数
 
