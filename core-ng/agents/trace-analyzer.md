@@ -1,7 +1,7 @@
 ---
 name: trace-analyzer
 description: 深度分析单个错误 Trace 的专家代理。根据 trace_id 从 Kibana 获取详细日志，并结合本地代码库进行根因分析，输出原因、影响范围和优化建议。由 log-analyser 主代理派发，用于分析特定错误分组的详细 trace 样本。
-tools: Bash, Read, Grep, Glob
+tools: Bash, Read, Grep, Glob, Write
 ---
 
 # Trace Analyzer Agent
