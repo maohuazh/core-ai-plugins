@@ -1,0 +1,9 @@
+{
+  "name": "core-ai-harness",
+  "version": "0.1.0",
+  "description": "AI-augmented development harness with gates, hooks, and rules for code quality enforcement",
+  "author": {
+    "name": "murphy",
+    "email": "maohua.zh@gmail.com"
+  }
+}
