@@ -4,9 +4,9 @@ Not just configs. An AI-augmented development system.
 
 ## 插件列表
 
-| 插件 | 描述 |
-|------|------|
-| [core-ng](core-ng/README.md) | Kibana 日志分析工具集 — 聚合分组、样本派发、根因分析 |
+| 插件                                         | 描述 |
+|----------------------------------------------|------|
+| [core-ai-harness](core-ai-harness/README.md) |  |
 
 ## 安装
 
