@@ -1,0 +1,30 @@
+id: no-mutable-accumulator
+language: java
+severity: error
+message: |
+  Mutable accumulator pattern detected. Use Stream.reduce() or collect() instead.
+
+  Bad:
+    List<String> result = new ArrayList<>();
+    for (Item item : items) { result.add(item.getName()); }
+
+  Good:
+    List<String> result = items.stream()
+        .map(Item::getName)
+        .collect(Collectors.toList());
+
+  FP Principle: Accumulators should not be constructed by mutation.
+  Use reduce or collect instead.
+
+note: "Violates Imperative Red Flags: Accumulators constructed by mutation"
+
+# Simplified: matches any .add() call on a collection variable.
+# This catches mutable accumulator patterns in most cases.
+# Full context-aware detection (checking if inside a loop) is complex
+# in ast-grep due to deep nesting; this simplified version is a practical
+# trade-off between precision and coverage.
+#
+# Future enhancement: use `inside` with proper `stopBy` to limit to loops.
+rule:
+  kind: method_invocation
+  pattern: $VAR.add($$$ARGS)

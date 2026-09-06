@@ -1,0 +1,28 @@
+id: no-parameter-mutation
+language: java
+severity: error
+message: |
+  Direct parameter/variable reassignment detected. Avoid mutation.
+
+  Bad:  void process(String param) { param = "new value"; }
+  Good: void process(String param) { String result = "new value"; return result; }
+
+  FP Principle: Variables are immutable. Return new values instead of reassigning.
+
+  Note: This rule catches direct reassignment (param = value), not field assignments.
+  Setting fields on DTOs (e.g., request.field = value) is allowed in this codebase.
+
+note: "Violates No Imperative Escape Hatches: mutating variables"
+
+rule:
+  kind: assignment_expression
+  has:
+    # Match only simple identifier assignments (not field access like obj.field)
+    field: left
+    kind: identifier
+    pattern: $VAR
+  not:
+    # Exclude field assignments (request.field = value)
+    has:
+      field: left
+      kind: field_access

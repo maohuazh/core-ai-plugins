@@ -56,7 +56,7 @@ core-ai-harness/
 │   ├── config.toml               # 门禁总配置（stdlib tomllib 解析）
 │   ├── ast-grep/
 │   │   ├── runner.sh             # sg scan 封装（--json 输出 findings）
-│   │   ├── sgconfig.yaml         # 精简版：只留 ast-grep 真实支持的字段
+│   │   ├── sgconfig.yml          # 精简版：只留 ast-grep 真实支持的字段
 │   │   ├── rules/fp/             # FP 范式规则（通用）
 │   │   ├── rules/shape/          # 架构形状约束（FBR profile）
 │   │   └── rules/security/       # 安全规则

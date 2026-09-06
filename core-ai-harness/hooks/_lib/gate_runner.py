@@ -117,11 +117,11 @@ def run_ast_grep(
         return findings, "skipped"
 
     # Build command
-    sgconfig_path = GATES_DIR / "ast-grep" / "sgconfig.yaml"
+    sgconfig_path = GATES_DIR / "ast-grep" / "sgconfig.yml"
     rules_dir = GATES_DIR / "ast-grep" / "rules"
 
     if not sgconfig_path.exists():
-        debug_log(f"sgconfig.yaml not found: {sgconfig_path}")
+        debug_log(f"sgconfig.yml not found: {sgconfig_path}")
         return findings, "skipped"
 
     # Use --json output for parsing
@@ -154,12 +154,14 @@ def run_ast_grep(
         return findings, "error"
 
     # Parse JSON output
-    if result.returncode not in (0, 1):  # 1 = found issues
+    # ast-grep exit codes: 0 = no issues, 1 = issues found (not an error)
+    if result.returncode not in (0, 1):
         debug_log(f"ast-grep exited with {result.returncode}: {result.stderr}")
         return findings, "error"
 
     try:
         # ast-grep --json outputs an array of matches
+        # Format: {text, range, file, language, ruleId, severity, message, ...}
         matches = json.loads(result.stdout)
     except json.JSONDecodeError:
         debug_log(f"Failed to parse ast-grep output: {result.stdout[:200]}")
@@ -168,9 +170,9 @@ def run_ast_grep(
     # Convert to Finding objects
     for match in matches:
         try:
-            # ast-grep JSON format: {rule, text, range, ...}
-            rule_id = match.get("rule", {}).get("id", "unknown")
-            file_path = match.get("range", {}).get("file", "")
+            # ast-grep JSON format
+            rule_id = match.get("ruleId", "unknown")
+            file_path = match.get("file", "")
             line = match.get("range", {}).get("start", {}).get("line", 0) + 1
             col = match.get("range", {}).get("start", {}).get("column", 0) + 1
 
@@ -180,13 +182,16 @@ def run_ast_grep(
             except ValueError:
                 pass
 
-            # Severity is in the rule definition, not in the match
-            # We'll default to ERROR and let the caller adjust
-            severity = "ERROR"
+            # Severity is in the match (lowercase: "error", "warning")
+            severity_raw = match.get("severity", "error")
+            severity = severity_raw.upper() if severity_raw else "ERROR"
 
             message = match.get("message", "")
             if not message:
                 message = f"Rule {rule_id} violated"
+
+            # Take first line of message for brevity
+            message = message.split("\n")[0] if message else ""
 
             finding = Finding(
                 rule_id=rule_id,

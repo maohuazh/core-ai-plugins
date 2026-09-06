@@ -1,0 +1,23 @@
+id: no-traditional-for-loop
+language: java
+severity: error
+message: |
+  Traditional for-loop detected. Use Stream API instead.
+
+  Bad:  for (int i = 0; i < list.size(); i++) { ... }
+  Good: IntStream.range(0, list.size()).forEach(i -> ...)
+  Good: list.stream().map(...).collect(toList())
+
+  ⚠️ PRAGMATIC EXCEPTIONS (use enhanced for-loop instead):
+  - Trivial adapters at effect boundaries
+  - Performance-critical primitive array access
+  - Use enhanced for-loop: for (Item item : items) { ... }
+
+  FP Principle: Core logic must be expressed with streams/folds.
+  Traditional for-loops are forbidden in business logic.
+
+note: "Violates FP-NATIVE DIRECTIVE and Imperative Red Flags section"
+
+rule:
+  kind: for_statement
+  pattern: for ($$$INIT; $$$CONDITION; $$$UPDATE) { $$$BODY }
