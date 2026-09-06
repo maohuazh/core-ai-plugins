@@ -1,0 +1,13 @@
+{
+  "name": "core-ai-harness",
+  "version": "0.1.0",
+  "description": "Core AI Harness - Automated code quality gates for Java projects",
+  "author": "Claude Code User",
+  "plugins": {
+    "core-ai-harness": {
+      "description": "Automated code quality gates with AST-Grep, security checks, and AI-powered code review",
+      "path": ".",
+      "version": "0.1.0"
+    }
+  }
+}
