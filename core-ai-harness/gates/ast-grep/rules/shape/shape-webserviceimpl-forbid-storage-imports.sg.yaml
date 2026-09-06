@@ -1,0 +1,29 @@
+id: shape-webserviceimpl-forbid-storage-imports
+language: java
+severity: warning
+message: |
+  WebServiceImpl should be a thin adapter. Storage/runtime imports are discouraged here.
+
+  Forbid: Repository/Database/Query/MongoCollection/Redis/Cache imports.
+
+note: "Shape constraint: WebServiceImpl should delegate to service layer"
+
+files:
+  - "backend/**/src/main/java/**/*WebServiceImpl.java"
+  - "integration/**/src/main/java/**/*WebServiceImpl.java"
+
+rule:
+  any:
+    - kind: import_declaration
+      pattern: import core.framework.db.Repository;
+    - kind: import_declaration
+      pattern: import core.framework.db.Database;
+    - kind: import_declaration
+      pattern: import core.framework.db.Query;
+    - kind: import_declaration
+      pattern: import core.framework.mongo.MongoCollection;
+    - kind: import_declaration
+      pattern: import core.framework.redis.Redis;
+    - kind: import_declaration
+      pattern: import core.framework.cache.Cache;
+

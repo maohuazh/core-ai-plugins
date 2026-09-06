@@ -1,0 +1,36 @@
+id: no-do-while-loop
+language: java
+severity: warning
+message: |
+  Do-while loop detected. Prefer Stream.iterate state-machine style for bounded workloads.
+
+  ⚠️ PRAGMATIC NOTE: Java lacks tail-call optimization (TCO).
+  For unbounded/large iterations, do-while may be necessary to avoid StackOverflowError.
+
+  Acceptable when:
+  - Iteration count is large/unbounded
+  - State transition logic is complex
+
+  Consider alternatives when:
+  - Iteration is bounded / known-page (e.g., skip-limit pagination)
+  - Logic can be modeled as state transitions
+
+  Canonical Stream alternative (pagination state machine):
+    Stream.iterate(client.search(request), Objects::nonNull,
+            response -> {
+                if (response.items().size() != request.limit) return null;
+                request.skip += request.limit;
+                return client.search(request);
+            }
+        )
+        .map(Response::items)
+        .flatMap(List::stream)
+        .toList();
+
+  FP Principle: Prefer streams/folds and data transformations; avoid recursion rewrites as loop substitutes in Java.
+
+note: "No TCO in Java - do-while acceptable for large iterations"
+
+rule:
+  kind: do_statement
+  pattern: do { $$$BODY } while ($CONDITION);

@@ -1,0 +1,20 @@
+id: shape-service-interface-kafka-contracts-forbid-methods
+language: java
+severity: warning
+message: |
+  Kafka contract classes in *-service-interface should be data-only:
+  - No instance methods
+  - No constructors
+
+  Keep these classes as POJOs/enums/constants only.
+
+note: "Shape constraint: Kafka contracts are data only"
+
+files:
+  - "**/*-service-interface/**/src/main/java/**/kafka/**/*.java"
+
+rule:
+  any:
+    - kind: method_declaration
+    - kind: constructor_declaration
+

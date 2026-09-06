@@ -1,0 +1,33 @@
+id: shape-mysql-table-outside-domain-folder
+language: java
+severity: warning
+message: |
+  MySQL entity (@Table) must live under a domain folder/package.
+
+  Move this class to app.<context>.domain.*.
+
+note: "Shape constraint: MySQL entities belong in ...domain"
+
+files:
+  - "**/*.java"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        pattern:
+          context: |
+            @Table($$$)
+            class X { $$$ }
+          selector: class_declaration
+
+    - not:
+        any:
+          - has:
+              kind: package_declaration
+              pattern: package $$$.domain;
+          - has:
+              kind: package_declaration
+              pattern: package $$$.domain.$$$;

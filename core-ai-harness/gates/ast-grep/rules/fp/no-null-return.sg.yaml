@@ -1,0 +1,28 @@
+id: no-null-return
+language: java
+severity: error
+message: |
+  Returning null detected. Use Optional<T> instead.
+
+  Bad:
+    public User findUser(String id) {
+      if (notFound) return null;
+      return user;
+    }
+
+  Good:
+    public Optional<User> findUser(String id) {
+      return repository.findById(id);
+    }
+
+  Also good (empty collection instead of null):
+    return List.of();  // instead of return null;
+
+  FP Principle: Never return null from business logic. Use Optional,
+  empty collections, or the null-object pattern.
+
+note: "Violates FP-NATIVE DIRECTIVE: return null forbidden"
+
+rule:
+  kind: return_statement
+  pattern: return null;

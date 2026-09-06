@@ -1,0 +1,60 @@
+id: shape-webserviceimpl-forbid-inject-storage-types
+language: java
+severity: warning
+message: |
+  WebServiceImpl should not inject storage/runtime dependencies directly.
+
+  Forbid @Inject fields of types:
+  - Repository / Database / Query
+  - MongoCollection / Redis / Cache
+
+note: "Shape constraint: WebServiceImpl should delegate to services"
+
+files:
+  - "backend/**/src/main/java/**/*WebServiceImpl.java"
+  - "integration/**/src/main/java/**/*WebServiceImpl.java"
+
+rule:
+  any:
+    - pattern:
+        context: |
+          class X {
+            @Inject
+            Repository<$T> $F;
+          }
+        selector: field_declaration
+    - pattern:
+        context: |
+          class X {
+            @Inject
+            Database $F;
+          }
+        selector: field_declaration
+    - pattern:
+        context: |
+          class X {
+            @Inject
+            Query<$T> $F;
+          }
+        selector: field_declaration
+    - pattern:
+        context: |
+          class X {
+            @Inject
+            MongoCollection<$T> $F;
+          }
+        selector: field_declaration
+    - pattern:
+        context: |
+          class X {
+            @Inject
+            Redis $F;
+          }
+        selector: field_declaration
+    - pattern:
+        context: |
+          class X {
+            @Inject
+            Cache<$T> $F;
+          }
+        selector: field_declaration

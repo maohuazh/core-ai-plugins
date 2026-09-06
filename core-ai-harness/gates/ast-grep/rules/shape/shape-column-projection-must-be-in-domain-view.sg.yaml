@@ -1,0 +1,28 @@
+id: shape-column-projection-must-be-in-domain-view
+language: java
+severity: warning
+message: |
+  Projection classes (use @Column but no @Table) must live under a domain.view package.
+
+note: "Shape constraint: MySQL projections belong in ...domain.view"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: annotation
+        pattern: "@Column($$$)"
+
+    - not:
+        has:
+          kind: annotation
+          pattern: "@Table($$$)"
+
+    - not:
+        has:
+          kind: package_declaration
+          any:
+            - pattern: package $$$.domain.view;
+            - pattern: package $$$.domain.view.$$$;
+

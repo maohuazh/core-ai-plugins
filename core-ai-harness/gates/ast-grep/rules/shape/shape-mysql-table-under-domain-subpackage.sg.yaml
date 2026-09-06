@@ -1,0 +1,30 @@
+id: shape-mysql-table-under-domain-subpackage
+language: java
+severity: warning
+message: |
+  MySQL entity (@Table) should live directly under the domain package (not domain.view/domain.inner/etc).
+
+  Move this class to app.<context>.domain.* (domain root).
+
+note: "Shape constraint: MySQL entities belong in ...domain (root)"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        pattern:
+          context: |
+            @Table($$$)
+            class X { $$$ }
+          selector: class_declaration
+
+    - has:
+        kind: package_declaration
+        pattern: package $$$.domain.$$$;
+
+    - not:
+        has:
+          kind: package_declaration
+          pattern: package $$$.domain;

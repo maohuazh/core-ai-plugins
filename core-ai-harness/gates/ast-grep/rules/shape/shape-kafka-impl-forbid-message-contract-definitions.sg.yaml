@@ -1,0 +1,26 @@
+id: shape-kafka-impl-forbid-message-contract-definitions
+language: java
+severity: warning
+message: |
+  Implementation module kafka packages should not define Kafka message contracts (*Message/*RequestMessage/*Topics).
+
+  Define message payloads/topics in the corresponding *-service-interface module, then consume them in handlers.
+
+note: "Shape constraint: Kafka contracts live in *-service-interface; impl kafka contains handlers only"
+
+files:
+  - "backend/*-service/**/src/main/java/**/kafka/**/*.java"
+  - "integration/*-service/**/src/main/java/**/kafka/**/*.java"
+  - "!**/*-service-interface/**"
+
+constraints:
+  NAME:
+    regex: ".*(Message|RequestMessage|Topics)$"
+
+rule:
+  kind: class_declaration
+  has:
+    field: name
+    kind: identifier
+    pattern: $NAME
+

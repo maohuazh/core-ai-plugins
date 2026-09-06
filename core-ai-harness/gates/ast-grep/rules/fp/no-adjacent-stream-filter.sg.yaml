@@ -1,0 +1,31 @@
+id: no-adjacent-stream-filter
+language: java
+severity: hint
+message: |
+  Adjacent Stream filter operations detected. Prefer collapsing back-to-back `.filter(...).filter(...)`
+  into a single predicate when the merged condition remains readable.
+
+  Bad:
+    items.stream()
+        .filter(Item::isActive)
+        .filter(item -> !item.isDeleted())
+        .toList();
+
+  Good:
+    items.stream()
+        .filter(item -> item.isActive() && !item.isDeleted())
+        .toList();
+
+  Scope limitation:
+  - This rule is syntax-only and intentionally anchored to `stream()` / `Stream.*`
+  - It may miss helper-returned Stream variables by design
+  - `Optional.filter(...).filter(...)` is intentionally out of scope
+
+note: "Advisory stream-chain smell only: collapse adjacent Stream filter stages when intent stays clear"
+
+constraints:
+  ROOT:
+    regex: '(?s)(?:\.stream\s*\(|\bStream\.(?:of|concat|iterate|generate|empty)\s*\()'
+
+rule:
+  pattern: $ROOT.filter($FIRST).filter($SECOND)

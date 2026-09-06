@@ -1,0 +1,13 @@
+# AST-Grep Configuration — FBR profile
+# Rule directories (relative to this config file)
+# Profile: fbr → generic FP + security rules + FBR-specific shape rules.
+
+ruleDirs:
+  - rules/fp
+  - rules/security
+  - rules/shape
+
+# Language configuration
+languageGlobs:
+  java:
+    - "**/*.java"

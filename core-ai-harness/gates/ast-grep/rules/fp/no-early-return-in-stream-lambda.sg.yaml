@@ -1,0 +1,42 @@
+id: no-early-return-in-stream-lambda
+language: java
+severity: warning
+message: |
+  Early-return control flow detected inside a Stream lambda block.
+
+  Bad:
+    items.stream()
+        .map(item -> {
+          if (item.isInvalid()) return fallback(item);
+          return transform(item);
+        })
+        .toList();
+
+  Good:
+    items.stream()
+        .map(item -> item.isInvalid() ? fallback(item) : transform(item))
+        .toList();
+
+  Also good:
+    items.stream()
+        .filter(Item::isValid)
+        .map(this::transform)
+        .toList();
+
+  Scope limitation:
+  - This rule is syntax-only and intentionally anchored to `stream()` / `Stream.*`
+  - It targets control-flow branching inside lambda blocks, not every block lambda
+  - Helper-returned Stream variables may be missed by design
+
+note: "Advisory stream-lambda smell only: avoid if/return control flow inside Stream callback blocks"
+
+constraints:
+  ROOT:
+    regex: '(?s)(?:\.stream\s*\(|\bStream\.(?:of|concat|iterate|generate|empty)\s*\()'
+  METHOD:
+    regex: 'map|flatMap|filter|forEach|peek|mapMulti|anyMatch|allMatch|noneMatch|takeWhile|dropWhile'
+  LAMBDA:
+    regex: '(?s).*->\s*\{.*\bif\s*\(.*\).*?\breturn\b.*\}'
+
+rule:
+  pattern: $ROOT.$METHOD($LAMBDA)

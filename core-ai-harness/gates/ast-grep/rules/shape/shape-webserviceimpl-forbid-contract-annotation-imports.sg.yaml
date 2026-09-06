@@ -1,0 +1,18 @@
+id: shape-webserviceimpl-forbid-contract-annotation-imports
+language: java
+severity: warning
+message: |
+  WebServiceImpl should not declare HTTP contract annotations.
+
+  HTTP contract annotations (@GET/@POST/@PUT/@Path/...) belong on WebService interfaces in *-service-interface modules.
+
+note: "Shape constraint: contracts live in *-service-interface"
+
+files:
+  - "backend/*-service/**/src/main/java/**/*WebServiceImpl.java"
+  - "integration/*-service/**/src/main/java/**/*WebServiceImpl.java"
+
+rule:
+  kind: import_declaration
+  pattern: import core.framework.api.web.service.$$$;
+

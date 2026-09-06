@@ -1,0 +1,25 @@
+id: shape-service-forbid-trivial-converter-wrapper
+language: java
+severity: warning
+message: |
+  Trivial converter wrapper detected in a service.
+
+  Do not hide a direct converter call behind a one-line helper when the service method owns no extra semantics.
+  Inline the converter call at the real usage site instead of adding a rename-only wrapper.
+
+note: "Advisory smell check only: keep a wrapper only if it adds real boundary semantics beyond the converter call"
+
+files:
+  - "backend/**/src/main/java/**/*Service.java"
+  - "integration/**/src/main/java/**/*Service.java"
+  - "frontend/**/src/main/java/**/*Service.java"
+  - "library/**/src/main/java/**/*Service.java"
+
+rule:
+  any:
+    - all:
+        - kind: method_declaration
+        - regex: '(?s)private\s+[^;=]+?\s+\w+\s*\([^)]*\)\s*\{\s*return\s+[A-Za-z0-9_]*Converter\.\w+\([^;]*\);\s*\}'
+    - all:
+        - kind: method_declaration
+        - regex: '(?s)private\s+void\s+\w+\s*\([^)]*\)\s*\{\s*[A-Za-z0-9_]*Converter\.\w+\([^;]*\);\s*\}'

@@ -35,9 +35,10 @@ def main():
         # Claude Code is in a stop-hook loop guard; do nothing
         sys.exit(0)
 
-    # Lightweight check: look for the session gate state marker
-    # (created by post_edit_gate.py when it blocks an edit)
-    session_state = Path(f"/tmp/core-ai-harness-{hook_input.get('session_id', 'unknown')}.json")
+    # Lightweight check: look for the session gate state file
+    # (written by post_edit_gate.py after every Java edit)
+    session_id = hook_input.get("session_id", "unknown")
+    session_state = Path("/tmp/core-ai-harness") / f"{session_id}.json"
 
     if session_state.exists():
         try:

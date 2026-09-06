@@ -1,0 +1,31 @@
+id: no-adjacent-stream-map
+language: java
+severity: hint
+message: |
+  Adjacent Stream map operations detected. Prefer collapsing back-to-back `.map(...).map(...)`
+  into a single transform when the combined lambda remains readable.
+
+  Bad:
+    items.stream()
+        .map(Item::id)
+        .map(String::trim)
+        .toList();
+
+  Good:
+    items.stream()
+        .map(item -> item.id().trim())
+        .toList();
+
+  Scope limitation:
+  - This rule is syntax-only and intentionally anchored to `stream()` / `Stream.*`
+  - It may miss helper-returned Stream variables by design
+  - `Optional.map(...).map(...)` is intentionally out of scope
+
+note: "Advisory stream-chain smell only: collapse adjacent Stream map stages when intent stays clear"
+
+constraints:
+  ROOT:
+    regex: '(?s)(?:\.stream\s*\(|\bStream\.(?:of|concat|iterate|generate|empty)\s*\()'
+
+rule:
+  pattern: $ROOT.map($FIRST).map($SECOND)

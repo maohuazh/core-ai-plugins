@@ -1,0 +1,20 @@
+id: shape-service-interface-forbid-domain-entity-annotations
+language: java
+severity: warning
+message: |
+  Service-interface modules must be contracts-only. Domain entity annotations are forbidden here.
+
+  Move @Table/@Collection domain entities to the corresponding *-service module's domain package.
+
+note: "Shape constraint: *-service-interface contains API/Kafka contracts, not DB/Mongo schema models"
+
+files:
+  - "**/*-service-interface/**"
+
+rule:
+  any:
+    - kind: annotation
+      pattern: "@Table($$$)"
+    - kind: annotation
+      pattern: "@Collection($$$)"
+

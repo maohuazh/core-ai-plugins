@@ -1,0 +1,18 @@
+id: shape-service-interface-forbid-kafka-handler
+language: java
+severity: warning
+message: |
+  Service-interface modules must be contracts-only. Kafka handlers must not be declared here.
+
+  Move Kafka handlers to the corresponding *-service implementation module.
+
+note: "Shape constraint: *-service-interface contains message contracts only"
+
+files:
+  - "**/*-service-interface/**"
+
+rule:
+  kind: super_interfaces
+  pattern:
+    context: public class $C implements MessageHandler<$T> { $$$ }
+    selector: super_interfaces

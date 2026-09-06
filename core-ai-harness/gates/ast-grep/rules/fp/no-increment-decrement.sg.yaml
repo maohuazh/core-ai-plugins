@@ -1,0 +1,33 @@
+id: no-increment-decrement
+language: java
+severity: error
+message: |
+  Increment/decrement operator detected. These mutate state and are forbidden in core logic.
+
+  Bad:
+    i++; i--; ++i; --i;
+
+  Good (immutable):
+    int next = i + 1;
+    int prev = i - 1;
+
+  Good (Stream):
+    IntStream.range(0, n).forEach(i -> ...)
+
+  ⚠️ PRAGMATIC NOTE: In very trivial boundary adapters (e.g., parsing loops),
+  this might be acceptable. But core business logic must be immutable.
+
+  FP Principle: No mutation operators in business logic.
+
+note: "Violates No Imperative Escape Hatches: ++ and --"
+
+rule:
+  any:
+    - kind: update_expression
+      pattern: $VAR++
+    - kind: update_expression
+      pattern: $VAR--
+    - kind: update_expression
+      pattern: ++$VAR
+    - kind: update_expression
+      pattern: --$VAR

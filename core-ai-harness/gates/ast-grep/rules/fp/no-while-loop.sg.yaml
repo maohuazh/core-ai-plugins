@@ -1,0 +1,36 @@
+id: no-while-loop
+language: java
+severity: warning
+message: |
+  While loop detected. Prefer Stream.iterate state-machine style for bounded workloads.
+
+  ⚠️ PRAGMATIC NOTE: Java lacks tail-call optimization (TCO).
+  For unbounded/large iterations, while may be necessary to avoid StackOverflowError.
+
+  Acceptable when:
+  - Iteration count is large/unbounded (e.g., parsing, polling)
+  - Breaking condition is complex
+
+  Prefer alternatives when:
+  - Iteration is bounded / known-page (e.g., skip-limit pagination)
+  - Logic can be modeled as state transitions
+
+  Canonical Stream alternative (pagination state machine):
+    Stream.iterate(client.search(request), Objects::nonNull,
+            response -> {
+                if (response.items().size() != request.limit) return null;
+                request.skip += request.limit;
+                return client.search(request);
+            }
+        )
+        .map(Response::items)
+        .flatMap(List::stream)
+        .toList();
+
+  FP Principle: Prefer streams/folds and data transformations; avoid recursion rewrites as loop substitutes in Java.
+
+note: "No TCO in Java - while acceptable for large/unbounded iterations"
+
+rule:
+  kind: while_statement
+  pattern: while ($CONDITION) { $$$BODY }

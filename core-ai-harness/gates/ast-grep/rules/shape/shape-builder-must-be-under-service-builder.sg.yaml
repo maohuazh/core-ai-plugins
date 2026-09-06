@@ -1,0 +1,29 @@
+id: shape-builder-must-be-under-service-builder
+language: java
+severity: warning
+message: |
+  *Builder class must live under a service.builder package.
+
+note: "Shape constraint: builders belong in ...service.builder"
+
+constraints:
+  NAME:
+    regex: ".*Builder$"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        has:
+          field: name
+          kind: identifier
+          pattern: $NAME
+
+    - not:
+        has:
+          kind: package_declaration
+          any:
+            - pattern: package $$$.service.builder;
+            - pattern: package $$$.service.builder.$$$;

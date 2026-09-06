@@ -1,0 +1,30 @@
+id: shape-controller-outside-controller-package
+language: java
+severity: warning
+message: |
+  Controller (implements core.framework.web.Controller) must live under a controller folder/package.
+
+  Move this class to a controller package (e.g. app.<context>.web.controller.* or app.<context>.controller.*).
+
+note: "Shape constraint: Controllers belong in ...controller"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        has:
+          kind: super_interfaces
+          pattern:
+            context: class X implements Controller { $$$ }
+            selector: super_interfaces
+
+    - not:
+        any:
+          - has:
+              kind: package_declaration
+              pattern: package $$$.controller;
+          - has:
+              kind: package_declaration
+              pattern: package $$$.controller.$$$;

@@ -1,0 +1,30 @@
+id: shape-kafka-handler-outside-kafka-package
+language: java
+severity: warning
+message: |
+  Kafka handler (implements MessageHandler<...>) must live under a kafka folder/package.
+
+  Move this class to a kafka package (e.g. app.<context>.kafka.*).
+
+note: "Shape constraint: Kafka handlers belong in ...kafka"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        has:
+          kind: super_interfaces
+          pattern:
+            context: class X implements MessageHandler<$T> { $$$ }
+            selector: super_interfaces
+
+    - not:
+        any:
+          - has:
+              kind: package_declaration
+              pattern: package $$$.kafka;
+          - has:
+              kind: package_declaration
+              pattern: package $$$.kafka.$$$;

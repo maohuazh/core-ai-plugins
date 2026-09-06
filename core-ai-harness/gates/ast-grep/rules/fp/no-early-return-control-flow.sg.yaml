@@ -1,0 +1,108 @@
+id: no-early-return-control-flow
+language: java
+severity: warning
+message: |
+  Early return branch-dispatch detected. Prefer expression-style branching for real business control flow.
+
+  Allowed:
+    String process(Input input) {
+      if (input == null) return "";
+      if (input.isEmpty()) return "";
+      return normalize(input);
+    }
+
+  Bad (branch-dispatch):
+    String process(Input input) {
+      if (input.isSpecial()) {
+        return doSpecialProcessing(input);
+      } else {
+        return doNormalProcessing(input);
+      }
+    }
+
+  Also bad:
+    String process(Input input) {
+      if (input.isSpecial()) return doSpecialProcessing(input);
+      else if (input.isFallback()) return doFallbackProcessing(input);
+      else return doNormalProcessing(input);
+    }
+
+  Good:
+    String process(Input input) {
+      return switch (input.getType()) {
+        case SPECIAL -> doSpecialProcessing(input);
+        case NORMAL -> doNormalProcessing(input);
+      };
+    }
+
+  FP Principle: ordinary guard clauses are fine; branch-dispatch return trees are the smell.
+
+note: "Advisory smell only: flag if/else return trees, not ordinary guard clauses"
+
+rule:
+  any:
+    - all:
+        - pattern:
+            context: |
+              class A {
+                Object f() {
+                  if ($COND) {
+                    return $THEN;
+                  } else {
+                    return $ELSE;
+                  }
+                }
+              }
+            selector: if_statement
+        - not:
+            inside:
+              kind: if_statement
+              stopBy: end
+    - all:
+        - pattern:
+            context: |
+              class A {
+                Object f() {
+                  if ($COND) return $THEN;
+                  else return $ELSE;
+                }
+              }
+            selector: if_statement
+        - not:
+            inside:
+              kind: if_statement
+              stopBy: end
+    - all:
+        - pattern:
+            context: |
+              class A {
+                Object f() {
+                  if ($COND) return $THEN;
+                  else if ($COND2) return $THEN2;
+                  else return $ELSE;
+                }
+              }
+            selector: if_statement
+        - not:
+            inside:
+              kind: if_statement
+              stopBy: end
+    - all:
+        - pattern:
+            context: |
+              class A {
+                Object f() {
+                  if ($COND) {
+                    return $THEN;
+                  } else if ($COND2) {
+                    return $THEN2;
+                  } else {
+                    return $ELSE;
+                  }
+                }
+              }
+            selector: if_statement
+        - not:
+            inside:
+              kind: if_statement
+              stopBy: end

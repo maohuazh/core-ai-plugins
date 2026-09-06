@@ -2,6 +2,7 @@
 
 import shutil
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -122,6 +123,63 @@ class TestGateRunner(unittest.TestCase):
 
         self.assertEqual(findings, [])
         self.assertEqual(statuses, {})
+
+    @unittest.skipUnless(AST_GREP_AVAILABLE, "ast-grep not installed")
+    def test_shape_rules_disabled_in_default_profile(self):
+        """Test that shape rules only fire in the fbr profile."""
+        files = [
+            "tests/fixtures/MyController.java",
+            "tests/fixtures/BadTypo.java",
+        ]
+
+        default_findings, _ = run_gates(
+            scope="files", files=files, project_root=PROJECT_ROOT, profile="default"
+        )
+        shape_ids = {f.rule_id for f in default_findings if f.rule_id.startswith("shape-")}
+        self.assertEqual(shape_ids, set(), f"default profile should not fire shape rules, got {shape_ids}")
+
+    @unittest.skipUnless(AST_GREP_AVAILABLE, "ast-grep not installed")
+    def test_shape_rules_enabled_in_fbr_profile(self):
+        """Test that shape rules fire in the fbr profile."""
+        files = [
+            "tests/fixtures/MyController.java",
+            "tests/fixtures/BadTypo.java",
+        ]
+
+        fbr_findings, _ = run_gates(
+            scope="files", files=files, project_root=PROJECT_ROOT, profile="fbr"
+        )
+        shape_ids = {f.rule_id for f in fbr_findings if f.rule_id.startswith("shape-")}
+        self.assertIn("shape-controller-outside-controller-package", shape_ids)
+        self.assertIn("shape-forbid-kakfa-package-typo", shape_ids)
+
+    @unittest.skipUnless(AST_GREP_AVAILABLE, "ast-grep not installed")
+    def test_fbr_gates_skipped_without_jar(self):
+        """Test lint/error-prone/build gates report skipped without deployed JARs."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "build.gradle").touch()
+            (project_root / "settings.gradle").touch()
+            src = project_root / "src"
+            (src / "main").mkdir(parents=True)
+            (src / "main" / "Bad.java").write_text(
+                "public class Bad { void f() { throw new RuntimeException(); } }"
+            )
+
+            findings, statuses = run_gates(
+                scope="files",
+                files=["src/main/Bad.java"],
+                project_root=project_root,
+                profile="fbr",
+            )
+
+            # lint/error-prone/build default enabled=false in config; only ast-grep+security run
+            self.assertNotIn("lint", statuses)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
 
 
 if __name__ == "__main__":

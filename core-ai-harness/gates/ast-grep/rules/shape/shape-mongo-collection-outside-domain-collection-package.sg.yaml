@@ -1,0 +1,30 @@
+id: shape-mongo-collection-outside-domain-collection-package
+language: java
+severity: warning
+message: |
+  Mongo entity (@Collection) must live under a domain/collection folder/package.
+
+  Move this class to app.<context>.domain.collection.*.
+
+note: "Shape constraint: Mongo entities belong in ...domain.collection"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        pattern:
+          context: |
+            @Collection($$$)
+            class X { $$$ }
+          selector: class_declaration
+
+    - not:
+        any:
+          - has:
+              kind: package_declaration
+              pattern: package $$$.domain.collection;
+          - has:
+              kind: package_declaration
+              pattern: package $$$.domain.collection.$$$;

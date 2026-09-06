@@ -1,0 +1,30 @@
+id: shape-converter-must-be-under-service-package
+language: java
+severity: warning
+message: |
+  *Converter class should live under a service package.
+
+note: "Shape constraint: converters are service-layer transformations"
+
+constraints:
+  NAME:
+    regex: ".*Converter$"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        has:
+          field: name
+          kind: identifier
+          pattern: $NAME
+
+    - not:
+        has:
+          kind: package_declaration
+          any:
+            - pattern: package $$$.service;
+            - pattern: package $$$.service.$$$;
+

@@ -1,0 +1,24 @@
+id: shape-service-interface-forbid-storage-imports
+language: java
+severity: warning
+message: |
+  Service-interface modules must be contracts-only. Storage/runtime imports are forbidden here.
+
+  Move DB/Mongo/Redis/Cache usage to the corresponding *-service implementation module.
+
+note: "Shape constraint: *-service-interface contains contracts only"
+
+files:
+  - "**/*-service-interface/**"
+
+rule:
+  any:
+    - kind: import_declaration
+      pattern: import core.framework.db.$$$;
+    - kind: import_declaration
+      pattern: import core.framework.mongo.$$$;
+    - kind: import_declaration
+      pattern: import core.framework.redis.$$$;
+    - kind: import_declaration
+      pattern: import core.framework.cache.$$$;
+

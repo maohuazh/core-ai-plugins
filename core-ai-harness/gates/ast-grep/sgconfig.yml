@@ -1,7 +1,8 @@
-# AST-Grep Configuration
-# See: https://ast-grep.github.io/guide/configure.html
-
+# AST-Grep Configuration — default profile
 # Rule directories (relative to this config file)
+# Profile: default → generic FP + security rules only.
+# See sgconfig-fbr.yml for the FBR profile (adds shape rules).
+
 ruleDirs:
   - rules/fp
   - rules/security
@@ -10,12 +11,3 @@ ruleDirs:
 languageGlobs:
   java:
     - "**/*.java"
-
-# Exclude patterns
-ignore:
-  - "**/build/**"
-  - "**/.gradle/**"
-  - "**/node_modules/**"
-  - "**/target/**"
-  - "**/*.min.js"
-  - "**/generated/**"

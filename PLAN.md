@@ -149,15 +149,16 @@ core-ai-harness/
 - [x] 6.3 占位其余 skill
 - [x] 6.4 Git commit
 
-### Step 7 — 二次完善（部分完成）
-- [ ] 7.1 补全 FP 规则：剩余 9 条活跃 + 重建 `no-null-return`
-- [ ] 7.2 shape 规则 30 条迁入 `rules/shape/`，仅 `fbr` profile 启用
-- [ ] 7.3 `gates/security/pattern_scanner.py`
-- [ ] 7.4 迁移 lint/error-prone/build 门禁（FBR profile，可选）
-- [ ] 7.5 完善 hooks：stop_report
-- [x] 7.6 补全 skills（code-review / project-onboard）✅
-- [x] 7.7 `config.toml` 完整 schema ✅
-- [ ] 7.8 Git commit
+### Step 7 — 二次完善 ✅
+- [x] 7.1 补全 FP 规则：迁移 8 条活跃 + 重建 `no-null-return` + 通用化 `no-instinct-fallback-exception`（共 13 条 FP 规则）
+- [x] 7.2 shape 规则 30 条迁入 `rules/shape/`，仅 `fbr` profile 启用（双 sgconfig 机制）
+- [x] 7.3 `gates/security/pattern_scanner.py`（硬编码密钥 / SQL 拼接 / 空 catch）
+- [x] 7.4 迁移 lint/error-prone/build 门禁（FBR profile，可选；JAR 不入 git，缺失时 skipped）
+- [x] 7.5 完善 hooks：stop_report（PostToolUse 写会话状态 → Stop 提醒未解决 ERROR，stop_hook_active 防循环）
+- [x] 7.6 补全 skills（code-review / project-onboard / gate-report）
+- [x] 7.7 `config.toml` 完整 schema（severity 覆盖、排除目录、profiles）+ gate_runner 实现
+- [x] 7.8 Git commit
+- 验收：54 个单元测试全绿；`claude plugin validate` 通过；default/fbr profile 规则隔离验证通过
 
 ### Step 8 — Commands + 安装 + 文档 ✅
 - [x] 8.1 `commands/gates.md` — 门禁总览/状态（frontmatter：description + argument-hint + allowed-tools）
@@ -173,15 +174,20 @@ core-ai-harness/
 **✅ 全部步骤已完成！**
 
 Core AI Harness 插件已完整实现，包括：
-- 基础设施（_lib 共享库、配置系统）
+- 基础设施（_lib 共享库、配置系统，零第三方依赖）
 - 规则层（4 个规则文件：FP、架构、安全、代码风格）
-- 门禁层（3 个 FP 规则 + AST-Grep 集成）
-- Hook 层（PostToolUse 自动检查、SessionStart 上下文注入）
-- 技能层（4 个技能：扫描、修复、审查、项目初始化）
+- 门禁层（13 条 FP 规则 + 30 条 shape 规则(FBR) + security 扫描器 + lint/error-prone/build(FBR 可选)）
+- Hook 层（PostToolUse 自动检查 + 会话状态、SessionStart 上下文注入、Stop 未解决错误提醒）
+- 技能层（5 个技能：扫描、修复、审查、项目初始化、报告）
 - 命令层（3 个命令：gates、gate-check、gate-install）
+- 测试（54 个单元测试，覆盖 Finding/project_detector/rule_loader/diff_parser/gate_runner/security）
 - 完整文档（README + marketplace 配置）
+
+**profile 机制：**
+- `default`：13 条 FP 规则 + security 扫描器（任何 Java 项目可用）
+- `fbr`：以上 + 30 条 shape 规则 + lint/error-prone/build（需部署 JAR）
 
 **下一步：**
 1. 在实际 Java 项目中测试插件：`claude --plugin-dir ./core-ai-harness`
-2. 可选：添加更多 FP 规则（剩余 9 条）或 shape 规则（30 条，仅 FBR 项目）
-3. 可选：实现 security 门禁的 pattern_scanner.py
+2. 部署 FBR JAR：`/gate-install --kit /path/to/fbr-agent-gates`
+3. 可选：`claude plugin eval` 建一个最小评测目录

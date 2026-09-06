@@ -1,0 +1,22 @@
+id: shape-service-interface-forbid-inject
+language: java
+severity: warning
+message: |
+  Service-interface modules must be contracts-only. @Inject indicates implementation logic leakage.
+
+  Move injected classes to the corresponding *-service module.
+
+note: "Shape constraint: *-service-interface contains contracts only"
+
+files:
+  - "**/*-service-interface/**"
+
+rule:
+  any:
+    - kind: import_declaration
+      pattern: import core.framework.inject.Inject;
+    - kind: marker_annotation
+      pattern: "@Inject"
+    - kind: annotation
+      pattern: "@Inject"
+

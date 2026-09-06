@@ -1,0 +1,17 @@
+id: shape-service-interface-forbid-kafka-handler-import
+language: java
+severity: warning
+message: |
+  Service-interface modules must be contracts-only. Kafka handlers must not appear here.
+
+  Service-interface may define message payloads/topics, but not MessageHandler implementations.
+
+note: "Shape constraint: *-service-interface contains Kafka message contracts only"
+
+files:
+  - "**/*-service-interface/**"
+
+rule:
+  kind: import_declaration
+  pattern: import core.framework.kafka.MessageHandler;
+

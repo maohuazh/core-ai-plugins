@@ -1,0 +1,18 @@
+id: shape-webserviceimpl-forbid-db-imports
+language: java
+severity: warning
+message: |
+  WebServiceImpl should not access MySQL DB directly (no core.framework.db imports).
+
+  Delegate DB operations to a Service/Repository boundary instead of doing DB work inside WebServiceImpl.
+
+note: "Shape constraint: web adapters should be thin"
+
+files:
+  - "backend/*-service/**/src/main/java/**/*WebServiceImpl.java"
+  - "integration/*-service/**/src/main/java/**/*WebServiceImpl.java"
+
+rule:
+  kind: import_declaration
+  pattern: import core.framework.db.$$$;
+

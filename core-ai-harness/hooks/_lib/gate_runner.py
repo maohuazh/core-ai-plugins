@@ -189,6 +189,7 @@ def run_ast_grep(
     files: list[str],
     project_root: Path,
     config: dict,
+    profile: str = "default",
 ) -> tuple[list[Finding], str]:
     """
     Run ast-grep on the given files.
@@ -197,6 +198,9 @@ def run_ast_grep(
         files: List of file paths to scan.
         project_root: Project root directory.
         config: Gate config dict.
+        profile: Config profile ("default" or "fbr"). Chooses the sgconfig:
+            - default: fp + security rules (sgconfig.yml)
+            - fbr: fp + security + shape rules (sgconfig-fbr.yml)
 
     Returns:
         (findings, status) where status is "ok", "skipped", or "error".
@@ -212,12 +216,13 @@ def run_ast_grep(
         debug_log("ast-grep not found")
         return findings, "skipped"
 
-    # Build command
-    sgconfig_path = GATES_DIR / "ast-grep" / "sgconfig.yml"
+    # Choose sgconfig based on profile
+    sgconfig_name = "sgconfig.yml" if profile != "fbr" else "sgconfig-fbr.yml"
+    sgconfig_path = GATES_DIR / "ast-grep" / sgconfig_name
     rules_dir = GATES_DIR / "ast-grep" / "rules"
 
     if not sgconfig_path.exists():
-        debug_log(f"sgconfig.yml not found: {sgconfig_path}")
+        debug_log(f"{sgconfig_name} not found: {sgconfig_path}")
         return findings, "skipped"
 
     # Use --json output for parsing
@@ -307,6 +312,209 @@ def run_ast_grep(
     return findings, "ok"
 
 
+def run_security_scan(
+    files: list[str],
+    project_root: Path,
+    config: dict,
+) -> tuple[list[Finding], str]:
+    """
+    Run the security pattern scanner on the given files.
+
+    Args:
+        files: List of file paths to scan.
+        project_root: Project root directory.
+        config: Gate config dict (unused, kept for interface consistency).
+
+    Returns:
+        (findings, status) where status is "ok" or "error".
+    """
+    findings = []
+
+    if not files:
+        return findings, "ok"
+
+    scanner = GATES_DIR / "security" / "pattern_scanner.py"
+    if not scanner.exists():
+        debug_log(f"pattern_scanner.py not found: {scanner}")
+        return findings, "skipped"
+
+    cmd = [
+        sys.executable,
+        str(scanner),
+        "--files",
+        ",".join(files),
+        "--project-root",
+        str(project_root),
+        "--json",
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        debug_log("security scan timed out")
+        return findings, "error"
+    except Exception as e:
+        debug_log(f"security scan failed: {e}")
+        return findings, "error"
+
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        debug_log(f"Failed to parse security scan output: {result.stdout[:200]}")
+        return findings, "error"
+
+    for item in data:
+        try:
+            finding = Finding.from_dict(item)
+            finding.gate = "security"
+            findings.append(finding)
+        except Exception as e:
+            debug_log(f"Failed to parse security finding: {e}")
+            continue
+
+    return findings, "ok"
+
+
+def run_external_gate(
+    gate_name: str,
+    script_relpath: str,
+    files: list[str],
+    project_root: Path,
+    extra_args: list[str] | None = None,
+) -> tuple[list[Finding], str]:
+    """
+    Run an external FBR gate script (lint / error-prone / build).
+
+    These gates are FBR-profile only and require binaries (JARs) that are
+    deployed out-of-band by gate-install. If the script or its prerequisite
+    JAR is missing, the gate is reported "skipped" (never an error).
+
+    Args:
+        gate_name: Gate name ("lint", "error-prone", "build") for status reporting.
+        script_relpath: Path to the runner script, relative to GATES_DIR.
+        files: Files to pass to the script (may be empty for build gate).
+        project_root: Project root.
+        extra_args: Extra CLI args before the file list.
+
+    Returns:
+        (findings, status) - status is "ok", "skipped", or "error".
+        Findings parsed from the script's stdout in file:line: message form;
+        unparseable output is not dropped - it is appended as a synthetic
+        finding only when it clearly references a file.
+    """
+    findings = []
+
+    script = GATES_DIR / script_relpath
+    if not script.exists():
+        debug_log(f"{gate_name} gate script not found: {script}")
+        return findings, "skipped"
+
+    # Check the gate is actually installed (JAR present for lint/error-prone;
+    # gradlew wrapper for build)
+    if gate_name in ("lint", "error-prone"):
+        dist_dir = GATES_DIR / gate_name / ".dist"
+        jar_files = list(dist_dir.glob("*.jar")) if dist_dir.exists() else []
+        if not jar_files:
+            debug_log(f"{gate_name} gate: no JAR deployed in {dist_dir}")
+            return findings, "skipped"
+    elif gate_name == "build":
+        if not (project_root / "gradlew").exists():
+            debug_log("build gate: no ./gradlew in project root")
+            return findings, "skipped"
+
+    cmd = [str(script)]
+    if extra_args:
+        cmd.extend(extra_args)
+    cmd.extend(str(project_root / f) for f in files)
+
+    debug_log(f"Running {gate_name} gate: {' '.join(cmd)}")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        debug_log(f"{gate_name} gate timed out")
+        return findings, "error"
+    except Exception as e:
+        debug_log(f"{gate_name} gate failed: {e}")
+        return findings, "error"
+
+    # Exit 2 = prerequisites missing (script's own check)
+    if result.returncode == 2:
+        return findings, "skipped"
+
+    # Parse output: try file:line: message form
+    parsed = _parse_external_findings(result.stdout, project_root, gate_name)
+    findings.extend(parsed)
+
+    if result.returncode not in (0, 1):
+        return findings, "error"
+
+    return findings, "ok"
+
+
+def _parse_external_findings(
+    output: str, project_root: Path, gate_name: str
+) -> list[Finding]:
+    """
+    Best-effort parse of external gate stdout into Findings.
+
+    Recognized formats (per line):
+        /abs/path.java:12: message
+        /abs/path.java:12:5: message
+        path.java: error: message
+    Unrecognized lines are ignored (kept in logs via debug).
+    """
+    import re
+
+    findings = []
+    pattern = re.compile(r"^(.+?):(\d+)(?::(\d+))?:\s*(.*)$")
+
+    for line in output.splitlines():
+        line = line.rstrip()
+        if not line.strip():
+            continue
+
+        m = pattern.match(line)
+        if not m:
+            continue
+
+        file_str, line_str, col_str, message = m.groups()
+        path = Path(file_str)
+        if path.suffix != ".java":
+            continue
+
+        # Relative to project root if possible
+        try:
+            file_rel = str(path.relative_to(project_root))
+        except ValueError:
+            file_rel = str(path)
+
+        findings.append(
+            Finding(
+                rule_id=f"{gate_name}:lint",
+                gate=gate_name,
+                file=file_rel,
+                line=int(line_str),
+                col=int(col_str) if col_str else None,
+                severity="ERROR",
+                message=message.strip(),
+                fixable=False,
+            )
+        )
+
+    return findings
+
+
 def _find_ast_grep() -> str | None:
     """Find ast-grep executable."""
     # Prefer 'ast-grep' over deprecated 'sg'
@@ -393,9 +601,41 @@ def run_gates(
 
     # Run ast-grep
     if "ast-grep" in enabled_gates:
-        findings, status = run_ast_grep(files_to_scan, project_root, config)
+        findings, status = run_ast_grep(files_to_scan, project_root, config, profile=profile)
         all_findings.extend(findings)
         gate_statuses["ast-grep"] = status
+
+    # Run security scanner
+    if "security" in enabled_gates:
+        findings, status = run_security_scan(files_to_scan, project_root, config)
+        all_findings.extend(findings)
+        gate_statuses["security"] = status
+
+    # Run FBR-specific gates (lint / error-prone): fbr profile + Gradle project only
+    is_gradle = detect_project(project_root).build_tool == "gradle"
+    if profile == "fbr" and is_gradle:
+        if "lint" in enabled_gates:
+            findings, status = run_external_gate(
+                "lint", "lint/java-lint.sh", files_to_scan, project_root
+            )
+            all_findings.extend(findings)
+            gate_statuses["lint"] = status
+
+        if "error-prone" in enabled_gates:
+            findings, status = run_external_gate(
+                "error-prone", "error-prone/error-prone-scan.sh",
+                files_to_scan, project_root,
+            )
+            all_findings.extend(findings)
+            gate_statuses["error-prone"] = status
+
+        if "build" in enabled_gates:
+            findings, status = run_external_gate(
+                "build", "build/gradle-run.sh", [], project_root,
+                extra_args=["build"],
+            )
+            all_findings.extend(findings)
+            gate_statuses["build"] = status
 
     # Apply [severity] overrides from config
     all_findings = apply_severity_overrides(all_findings, config)

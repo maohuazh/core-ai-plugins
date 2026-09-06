@@ -1,0 +1,32 @@
+id: shape-column-projection-class-name-must-end-with-view
+language: java
+severity: warning
+message: |
+  Projection classes (use @Column but no @Table) must have class name suffix *View.
+
+note: "Shape constraint: projections are *View"
+
+constraints:
+  NAME:
+    not:
+      regex: ".*View$"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: annotation
+        pattern: "@Column($$$)"
+
+    - not:
+        has:
+          kind: annotation
+          pattern: "@Table($$$)"
+
+    - has:
+        kind: class_declaration
+        has:
+          field: name
+          kind: identifier
+          pattern: $NAME

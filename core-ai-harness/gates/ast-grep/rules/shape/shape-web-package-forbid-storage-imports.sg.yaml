@@ -1,0 +1,39 @@
+id: shape-web-package-forbid-storage-imports
+language: java
+severity: warning
+message: |
+  Web package should remain thin. Storage/runtime imports are discouraged in web (excluding web.controller).
+
+  Forbid: Repository/Database/Query/MongoCollection/Redis/Cache imports.
+
+note: "Shape constraint: web adapter thinness"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: package_declaration
+        pattern: package $$$.web.$$$;
+
+    - not:
+        has:
+          kind: package_declaration
+          any:
+            - pattern: package $$$.web.controller;
+            - pattern: package $$$.web.controller.$$$;
+
+    - has:
+        any:
+          - kind: import_declaration
+            pattern: import core.framework.db.Repository;
+          - kind: import_declaration
+            pattern: import core.framework.db.Database;
+          - kind: import_declaration
+            pattern: import core.framework.db.Query;
+          - kind: import_declaration
+            pattern: import core.framework.mongo.MongoCollection;
+          - kind: import_declaration
+            pattern: import core.framework.redis.Redis;
+          - kind: import_declaration
+            pattern: import core.framework.cache.Cache;

@@ -28,6 +28,27 @@ from _lib.project_detector import detect_project
 from _lib import debug_log
 
 
+SESSION_STATE_DIR = Path("/tmp/core-ai-harness")
+
+
+def update_session_state(session_id: str, pending_errors: int) -> None:
+    """
+    Persist the unresolved-error count for the current session.
+
+    This state is read by the Stop hook (stop_report.py) to decide whether
+    to remind Claude about unresolved gate violations at the end of a turn.
+    """
+    try:
+        SESSION_STATE_DIR.mkdir(exist_ok=True)
+        state_file = SESSION_STATE_DIR / f"{session_id}.json"
+        state_file.write_text(
+            json.dumps({"pending_errors": pending_errors}),
+            encoding="utf-8",
+        )
+    except Exception as e:
+        debug_log(f"Failed to update session state: {e}")
+
+
 def main():
     """Entry point for PostToolUse hook."""
     # Read hook input from stdin (provided by Claude Code)
@@ -36,6 +57,8 @@ def main():
     except (json.JSONDecodeError, EOFError):
         # If we can't parse input, exit gracefully
         sys.exit(0)
+
+    session_id = hook_input.get("session_id", "unknown")
 
     # Get the file path that was edited
     tool_input = hook_input.get("tool_input", {})
@@ -80,6 +103,10 @@ def main():
 
     # Filter for ERROR severity only (WARNING/HINT don't block)
     errors = [f for f in findings if f.severity == "ERROR"]
+
+    # Record session state for the Stop hook (0 when clean so a later fix
+    # clears the reminder)
+    update_session_state(session_id, len(errors))
 
     if not errors:
         # No errors found, allow the edit

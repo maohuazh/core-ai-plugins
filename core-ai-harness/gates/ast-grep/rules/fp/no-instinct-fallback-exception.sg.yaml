@@ -1,0 +1,40 @@
+id: no-instinct-fallback-exception
+language: java
+severity: error
+message: |
+  Instinct fallback exception detected. Production application code must
+  throw a domain/business exception with an explicit error code, not a
+  raw JDK exception.
+
+  Preferred replacements:
+  - invalid request / parse / unsupported client input -> BadRequestException
+  - missing entity / missing dependency -> NotFoundException
+  - invalid state transition / duplicate / already processed -> ConflictException
+  - auth / permission failure -> UnauthorizedException or ForbiddenException
+  - upstream HTTP/service failure -> RemoteServiceException
+  - module-owned boundary contract -> a local *Exception that carries an
+    explicit error code
+
+  Banned instinct fallback exceptions:
+  - RuntimeException
+  - IllegalStateException
+  - IllegalArgumentException
+  - UnsupportedOperationException
+
+  Watchlist for future enforcement:
+  - NullPointerException
+  - NoSuchElementException
+  - IndexOutOfBoundsException
+  - AssertionError
+
+note: "Boundary exceptions must carry explicit error codes"
+
+files:
+  - "**/src/main/java/**/*.java"
+
+rule:
+  any:
+    - pattern: throw new RuntimeException($$$ARGS);
+    - pattern: throw new IllegalStateException($$$ARGS);
+    - pattern: throw new IllegalArgumentException($$$ARGS);
+    - pattern: throw new UnsupportedOperationException($$$ARGS);

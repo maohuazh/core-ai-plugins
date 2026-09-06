@@ -1,0 +1,75 @@
+id: shape-service-forbid-thin-service-relay
+language: java
+severity: warning
+message: |
+  Thin service-to-service relay detected.
+
+  Service methods should own boundary or orchestration semantics such as:
+  - validation or refinement
+  - transaction scope
+  - error mapping
+  - auth-source selection
+  - async triggering
+  - multi-dependency aggregation
+
+  If this method only forwards to another injected service, remove the wrapper and inject the underlying dependency at
+  the real caller instead.
+
+note: "Advisory smell check only: verify ownership before keeping a one-line service relay"
+
+files:
+  - "backend/**/src/main/java/**/*Service.java"
+  - "integration/**/src/main/java/**/*Service.java"
+  - "frontend/**/src/main/java/**/*Service.java"
+  - "library/**/src/main/java/**/*Service.java"
+
+rule:
+  any:
+    - all:
+        - pattern:
+            context: |
+              class $CLASS {
+                $RET $METHOD($$$PARAMS) {
+                  return $SERVICE.$CALLEE($$$ARGS);
+                }
+              }
+            selector: method_declaration
+        - inside:
+            kind: class_body
+            stopBy: end
+            has:
+              all:
+                - kind: field_declaration
+                - has:
+                    kind: marker_annotation
+                    pattern: "@Inject"
+                - has:
+                    kind: type_identifier
+                    regex: ".*Service$"
+                - has:
+                    kind: variable_declarator
+                    pattern: $SERVICE
+    - all:
+        - pattern:
+            context: |
+              class $CLASS {
+                void $METHOD($$$PARAMS) {
+                  $SERVICE.$CALLEE($$$ARGS);
+                }
+              }
+            selector: method_declaration
+        - inside:
+            kind: class_body
+            stopBy: end
+            has:
+              all:
+                - kind: field_declaration
+                - has:
+                    kind: marker_annotation
+                    pattern: "@Inject"
+                - has:
+                    kind: type_identifier
+                    regex: ".*Service$"
+                - has:
+                    kind: variable_declarator
+                    pattern: $SERVICE

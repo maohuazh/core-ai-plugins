@@ -1,0 +1,16 @@
+id: shape-forbid-kakfa-package-typo
+language: java
+severity: warning
+message: |
+  Package typo detected: ".kakfa" should be ".kafka".
+
+  Rename the package and directory to "kafka".
+
+note: "Shape constraint: use ...kafka package for Kafka artifacts"
+
+rule:
+  any:
+    - kind: package_declaration
+      pattern: package $$$.kakfa;
+    - kind: package_declaration
+      pattern: package $$$.kakfa.$$$;

@@ -1,0 +1,30 @@
+id: shape-client-must-be-under-client-package
+language: java
+severity: warning
+message: |
+  *Client class must live under a client package.
+
+note: "Shape constraint: external HTTP wrappers belong in ...client"
+
+constraints:
+  NAME:
+    regex: ".*Client$"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        has:
+          field: name
+          kind: identifier
+          pattern: $NAME
+
+    - not:
+        has:
+          kind: package_declaration
+          any:
+            - pattern: package $$$.client;
+            - pattern: package $$$.client.$$$;
+

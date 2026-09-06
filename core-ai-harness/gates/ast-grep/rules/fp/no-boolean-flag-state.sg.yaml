@@ -1,0 +1,25 @@
+id: no-boolean-flag-state
+language: java
+severity: error
+message: |
+  Boolean flag used as state machine detected. Use sealed types/enums instead.
+
+  Bad:
+    boolean found = false;
+    if (condition) { found = true; }
+
+  Good:
+    sealed interface SearchResult permits Found, NotFound {}
+    record Found(String value) implements SearchResult {}
+    record NotFound() implements SearchResult {}
+
+  FP Principle: Turn flags into ADTs; make illegal states unrepresentable.
+  Boolean flags controlling multi-stage flows are forbidden.
+
+note: "Violates Imperative Red Flags: Boolean flags controlling multi-stage flows"
+
+rule:
+  kind: assignment_expression
+  pattern: $FLAG = $VALUE
+  inside:
+    kind: if_statement

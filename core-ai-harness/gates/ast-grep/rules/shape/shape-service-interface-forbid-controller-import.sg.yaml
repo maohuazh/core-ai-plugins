@@ -1,0 +1,20 @@
+id: shape-service-interface-forbid-controller-import
+language: java
+severity: warning
+message: |
+  Service-interface modules must be contracts-only. Controllers must not appear here.
+
+  Move Controllers to the corresponding *-service implementation module.
+
+note: "Shape constraint: *-service-interface contains contracts only"
+
+files:
+  - "**/*-service-interface/**"
+
+rule:
+  any:
+    - kind: import_declaration
+      pattern: import core.framework.web.Controller;
+    - kind: import_declaration
+      pattern: import core.framework.web.$$$;
+

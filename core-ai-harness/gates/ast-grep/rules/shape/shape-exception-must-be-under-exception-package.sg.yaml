@@ -1,0 +1,30 @@
+id: shape-exception-must-be-under-exception-package
+language: java
+severity: warning
+message: |
+  *Exception class must live under an exception package.
+
+note: "Shape constraint: exceptions belong in ...exception"
+
+constraints:
+  NAME:
+    regex: ".*Exception$"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: class_declaration
+        has:
+          field: name
+          kind: identifier
+          pattern: $NAME
+
+    - not:
+        has:
+          kind: package_declaration
+          any:
+            - pattern: package $$$.exception;
+            - pattern: package $$$.exception.$$$;
+

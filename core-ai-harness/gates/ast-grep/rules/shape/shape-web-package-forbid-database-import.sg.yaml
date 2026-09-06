@@ -1,0 +1,26 @@
+id: shape-web-package-forbid-database-import
+language: java
+severity: warning
+message: |
+  Web package should remain thin. core.framework.db.Database should not be used in web (excluding web.controller).
+
+note: "Shape constraint: web adapter thinness"
+
+rule:
+  all:
+    - kind: program
+
+    - has:
+        kind: import_declaration
+        pattern: import core.framework.db.Database;
+
+    - has:
+        kind: package_declaration
+        pattern: package $$$.web.$$$;
+
+    - not:
+        has:
+          kind: package_declaration
+          any:
+            - pattern: package $$$.web.controller;
+            - pattern: package $$$.web.controller.$$$;
