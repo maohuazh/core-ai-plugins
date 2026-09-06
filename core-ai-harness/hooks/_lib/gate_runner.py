@@ -57,6 +57,27 @@ def load_config(config_path: Path | None = None) -> dict:
         return {}
 
 
+def get_active_profile(config: dict) -> str:
+    """
+    Get the active profile from config.
+
+    Supports both nested TOML table format:
+        [profile]
+        active = "fbr"
+    and flat string format:
+        profile = "fbr"
+
+    Returns:
+        Profile name, defaulting to "default".
+    """
+    profile_cfg = config.get("profile", "default")
+    if isinstance(profile_cfg, dict):
+        return profile_cfg.get("active", "default")
+    if isinstance(profile_cfg, str) and profile_cfg:
+        return profile_cfg
+    return "default"
+
+
 def get_enabled_gates(config: dict, profile: str = "default") -> list[str]:
     """
     Get list of enabled gates from config.
@@ -82,6 +103,81 @@ def get_enabled_gates(config: dict, profile: str = "default") -> list[str]:
                 enabled.append(gate_name)
 
     return enabled
+
+
+def filter_excluded_files(
+    files: list[str], config: dict
+) -> list[str]:
+    """
+    Filter out files matching the [exclude].paths globs from config.
+
+    Args:
+        files: List of file paths (relative to project root).
+        config: Config dict from load_config().
+
+    Returns:
+        Filtered list.
+    """
+    exclude_patterns = config.get("exclude", {}).get("paths", [])
+    if not exclude_patterns:
+        return files
+
+    import fnmatch
+
+    filtered = []
+    for f in files:
+        norm = f.replace("\\", "/")
+        excluded = any(fnmatch.fnmatch(norm, pat) for pat in exclude_patterns)
+        if not excluded:
+            filtered.append(f)
+
+    return filtered
+
+
+def apply_severity_overrides(
+    findings: list[Finding], config: dict
+) -> list[Finding]:
+    """
+    Apply [severity] overrides from config to findings.
+
+    Config format:
+        [severity]
+        severity.ast-grep.no-while-loop = "WARNING"
+        severity.ast-grep.no-boolean-flag-state = "OFF"
+
+    Args:
+        findings: List of Finding objects.
+        config: Config dict from load_config().
+
+    Returns:
+        List of findings with severity overridden (OFF findings removed).
+    """
+    severity_cfg = config.get("severity", {})
+    if not severity_cfg:
+        return findings
+
+    # Build lookup: (gate, rule_id) -> severity
+    overrides = {}
+    for key, value in severity_cfg.items():
+        # Key format: "severity.<gate>.<rule_id>" (documented) or "<gate>.<rule_id>"
+        key = key.removeprefix("severity.")
+        gate, _, rule_id = key.partition(".")
+        if gate and rule_id:
+            overrides[(gate, rule_id)] = str(value).upper()
+
+    if not overrides:
+        return findings
+
+    result = []
+    for f in findings:
+        new_sev = overrides.get((f.gate, f.rule_id))
+        if new_sev == "OFF":
+            continue  # Rule disabled
+        if new_sev in ("ERROR", "WARNING", "HINT"):
+            f.severity = new_sev
+        result.append(f)
+
+    return result
 
 
 # ============================================================================
@@ -240,7 +336,7 @@ def run_gates(
     scope: Literal["files", "changed", "all"],
     files: list[str] | None = None,
     project_root: Path | None = None,
-    profile: str = "default",
+    profile: str | None = None,
 ) -> tuple[list[Finding], dict[str, str]]:
     """
     Run all enabled gates.
@@ -249,7 +345,7 @@ def run_gates(
         scope: "files" (specific list), "changed" (git diff), or "all" (all Java files).
         files: List of files (required if scope="files").
         project_root: Project root directory. Defaults to CWD.
-        profile: Config profile ("default" or "fbr").
+        profile: Config profile ("default" or "fbr"). Defaults to config's active profile.
 
     Returns:
         (findings, gate_statuses) where gate_statuses maps gate name to "ok"/"skipped"/"error".
@@ -258,6 +354,11 @@ def run_gates(
         project_root = Path.cwd()
 
     config = load_config()
+
+    # Resolve profile: explicit arg wins, else config's active profile
+    if profile is None:
+        profile = get_active_profile(config)
+
     enabled_gates = get_enabled_gates(config, profile)
 
     debug_log(f"Enabled gates: {enabled_gates}")
@@ -282,7 +383,10 @@ def run_gates(
     else:
         return [], {}
 
-    debug_log(f"Files to scan: {len(files_to_scan)}")
+    # Apply [exclude].paths from config
+    files_to_scan = filter_excluded_files(files_to_scan, config)
+
+    debug_log(f"Files to scan (after excludes): {len(files_to_scan)}")
 
     all_findings = []
     gate_statuses = {}
@@ -292,6 +396,9 @@ def run_gates(
         findings, status = run_ast_grep(files_to_scan, project_root, config)
         all_findings.extend(findings)
         gate_statuses["ast-grep"] = status
+
+    # Apply [severity] overrides from config
+    all_findings = apply_severity_overrides(all_findings, config)
 
     return all_findings, gate_statuses
 

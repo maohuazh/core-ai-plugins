@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _lib import PLUGIN_ROOT, is_java_file
 from _lib.gate_runner import run_gates
 from _lib.project_detector import detect_project
+from _lib import debug_log
 
 
 def main():
@@ -59,18 +60,15 @@ def main():
     # Detect project type to determine which profile to use
     cwd = Path.cwd()
     project_info = detect_project(cwd)
-
-    # Determine profile based on project type
-    # FBR projects use specific rules; others use default
-    # For now, default to "default" profile
-    profile = "default"
+    debug_log(f"Project type: {project_info.type}, build tool: {project_info.build_tool}")
 
     # Run gates on the edited file
+    # profile=None → uses config's active profile (see run_gates)
     findings, statuses = run_gates(
         scope="files",
         files=[str(file_path)],
         project_root=cwd,
-        profile=profile,
+        profile=None,
     )
 
     # Check if any gate was skipped due to missing dependencies

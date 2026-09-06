@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from _lib import PLUGIN_ROOT
-from _lib.gate_runner import load_config, get_enabled_gates
+from _lib.gate_runner import get_active_profile, get_enabled_gates, load_config
 from _lib.project_detector import detect_project
 from _lib.rule_loader import get_rules_summary, load_rules_metadata
 
@@ -36,8 +36,8 @@ def main():
     # Load configuration
     config = load_config()
 
-    # Get active profile (default to "default" if not specified)
-    profile = config.get("profile", "default")
+    # Get active profile (from [profile].active in config.toml)
+    profile = get_active_profile(config)
 
     # Get enabled gates for this profile
     enabled_gates = get_enabled_gates(config, profile)

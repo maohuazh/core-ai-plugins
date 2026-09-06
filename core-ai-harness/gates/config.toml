@@ -1,25 +1,38 @@
 # Core AI Harness - Gate Configuration
+#
+# This is the plugin's DEFAULT configuration.
+# A target project can override it by placing a `.claude/gates.toml` file
+# (see "Project Overrides" at the bottom).
 
+# ============================================================
+# Profile
+# ============================================================
 [profile]
-# Active profile: "default" (generic) or "fbr" (FBR-specific rules)
+# Active profile: "default" (generic, any Java project) or "fbr" (FBR-specific rules)
+# Note: gate_runner reads this. The hooks currently default to "default";
+# project overrides may set it to "fbr".
 active = "default"
 
+# ============================================================
+# Gates
+# ============================================================
 [gates]
-# Gate: ast-grep (AST pattern matching)
+
+# Gate: ast-grep (AST pattern matching - generic FP rules)
 [gates.ast-grep]
 enabled = true
 profiles = ["default", "fbr"]  # Available in both profiles
-timeout = 30  # seconds
+timeout = 30                   # seconds
 
-# Gate: security (regex pattern scanner)
+# Gate: security (regex pattern scanner - generic)
 [gates.security]
 enabled = true
 profiles = ["default", "fbr"]
 
-# Gate: lint (Java deep analysis - FBR only)
+# Gate: lint (Java deep analysis - FBR only, requires JAR deployed by gate-install)
 [gates.lint]
 enabled = false
-profiles = ["fbr"]  # Only in FBR profile
+profiles = ["fbr"]
 
 # Gate: error-prone (compiler-level checks - FBR only)
 [gates.error-prone]
@@ -31,8 +44,51 @@ profiles = ["fbr"]
 enabled = false
 profiles = ["fbr"]
 
-[overrides]
-# Project-level overrides can be placed in .claude/gates.toml
-# Example:
-# [gates.ast-grep]
-# enabled = false
+# ============================================================
+# Severity overrides
+#   Change a rule's severity globally. Valid values:
+#   ERROR, WARNING, HINT, OFF (disable the rule entirely).
+#   Format: severity.<gate>.<rule_id> = "WARNING"
+# ============================================================
+[severity]
+# Examples (commented out by default):
+# severity.ast-grep.no-while-loop = "WARNING"
+# severity.ast-grep.no-boolean-flag-state = "OFF"
+
+# ============================================================
+# Exclusions
+#   Paths/globs excluded from ALL gates.
+# ============================================================
+[exclude]
+paths = [
+  "**/build/**",
+  "**/.gradle/**",
+  "**/node_modules/**",
+  "**/target/**",
+  "**/generated/**",
+  "**/.git/**",
+]
+
+# ============================================================
+# Project Overrides
+# ============================================================
+# A target project can create `.claude/gates.toml` with the same schema.
+# Overrides are MERGED with this default config:
+#
+#   # .claude/gates.toml  (in the target project)
+#   [profile]
+#   active = "fbr"            # switch to FBR profile
+#
+#   [gates.ast-grep]
+#   enabled = true
+#
+#   [gates.lint]              # enable FBR lint (JAR must be deployed)
+#   enabled = true
+#
+#   [severity]
+#   severity.ast-grep.no-traditional-for-loop = "WARNING"
+#
+#   [exclude]
+#   paths = ["**/legacy/**"]
+#
+# NOTE: exclude.paths REPLACES the default list when overridden.
