@@ -1,13 +1,21 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "core-ai-harness",
-  "version": "0.1.0",
-  "description": "Core AI Harness - Automated code quality gates for Java projects",
-  "author": "Claude Code User",
-  "plugins": {
-    "core-ai-harness": {
-      "description": "Automated code quality gates with AST-Grep, security checks, and AI-powered code review",
-      "path": ".",
-      "version": "0.1.0"
+  "description": "AI-augmented development harness with gates, hooks, and rules for code quality enforcement",
+  "owner": {
+    "name": "murphy",
+    "email": "maohua.zh@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "core-ai-harness",
+      "description": "Automated code quality gates (AST-Grep FP rules), edit hooks, and AI rules for Java projects",
+      "author": {
+        "name": "murphy",
+        "email": "maohua.zh@gmail.com"
+      },
+      "version": "0.1.0",
+      "source": "."
     }
-  }
+  ]
 }
