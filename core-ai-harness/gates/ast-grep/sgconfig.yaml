@@ -1,0 +1,21 @@
+# AST-Grep Configuration
+# See: https://ast-grep.github.io/guide/configure.html
+
+# Rule directories (relative to this config file)
+ruleDirs:
+  - rules/fp
+  - rules/security
+
+# Language configuration
+languageGlobs:
+  java:
+    - "**/*.java"
+
+# Exclude patterns
+ignore:
+  - "**/build/**"
+  - "**/.gradle/**"
+  - "**/node_modules/**"
+  - "**/target/**"
+  - "**/*.min.js"
+  - "**/generated/**"

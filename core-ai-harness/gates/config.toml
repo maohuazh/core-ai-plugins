@@ -1,0 +1,38 @@
+# Core AI Harness - Gate Configuration
+
+[profile]
+# Active profile: "default" (generic) or "fbr" (FBR-specific rules)
+active = "default"
+
+[gates]
+# Gate: ast-grep (AST pattern matching)
+[gates.ast-grep]
+enabled = true
+profiles = ["default", "fbr"]  # Available in both profiles
+timeout = 30  # seconds
+
+# Gate: security (regex pattern scanner)
+[gates.security]
+enabled = true
+profiles = ["default", "fbr"]
+
+# Gate: lint (Java deep analysis - FBR only)
+[gates.lint]
+enabled = false
+profiles = ["fbr"]  # Only in FBR profile
+
+# Gate: error-prone (compiler-level checks - FBR only)
+[gates.error-prone]
+enabled = false
+profiles = ["fbr"]
+
+# Gate: build (Gradle build verification - FBR only)
+[gates.build]
+enabled = false
+profiles = ["fbr"]
+
+[overrides]
+# Project-level overrides can be placed in .claude/gates.toml
+# Example:
+# [gates.ast-grep]
+# enabled = false

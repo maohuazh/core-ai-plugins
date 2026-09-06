@@ -97,10 +97,11 @@ core-ai-harness/
 
 ## 实施步骤
 
-### Step 0 — 环境准备
-- [ ] 0.1 `brew install ast-grep`（本机未装，Step 4 起依赖）
-- [ ] 0.2 验证 `sg --version`、`java -version`(21)、`python3 --version`(3.14)
-- 验收：`sg scan --help` 可执行
+### Step 0 — 环境准备 ✅
+- [x] 0.1 `brew install ast-grep` — 本机已装 0.45.3
+- [x] 0.2 验证 `ast-grep --version`(0.45.3)、`java -version`(21)、`python3 --version`(3.14)
+- 验收：`ast-grep scan --help` 可执行
+- ⚠️ 注意：`sg` 命令已弃用，统一使用 `ast-grep`
 
 ### Step 1 — 项目骨架 ✅ 文件已创建，待 git commit
 - [x] 1.1 创建 `.claude-plugin/plugin.json`
