@@ -66,6 +66,8 @@ def update_session_state(session_id: str, pending_errors: int) -> None:
     """
     try:
         SESSION_STATE_DIR.mkdir(exist_ok=True)
+        # Sanitize session_id to prevent path traversal (defense in depth)
+        session_id = session_id.replace("/", "").replace("\\", "").replace("..", "")
         state_file = SESSION_STATE_DIR / f"{session_id}.json"
         state_file.write_text(
             json.dumps({"pending_errors": pending_errors}),

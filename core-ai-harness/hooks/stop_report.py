@@ -40,6 +40,10 @@ def main():
     # Lightweight check: look for the session gate state file
     # (written by post_edit_gate.py after every Java edit)
     session_id = hook_input.get("session_id", "unknown")
+
+    # Sanitize session_id to prevent path traversal (defense in depth)
+    session_id = session_id.replace("/", "").replace("\\", "").replace("..", "")
+
     session_state = Path("/tmp/core-ai-harness") / f"{session_id}.json"
 
     if session_state.exists():

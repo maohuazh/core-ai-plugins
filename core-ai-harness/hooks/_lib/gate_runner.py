@@ -390,15 +390,17 @@ def run_security_scan(
         debug_log(f"pattern_scanner.py not found: {scanner}")
         return findings, "skipped"
 
+    # Build command with separate --files arguments for each file
     cmd = [
         sys.executable,
         str(scanner),
-        "--files",
-        ",".join(files),
         "--project-root",
         str(project_root),
         "--json",
     ]
+    # Add each file as a separate --files argument to avoid comma-separation issues
+    for f in files:
+        cmd.extend(["--files", str(project_root / f)])
 
     try:
         result = subprocess.run(
@@ -677,22 +679,24 @@ def run_gates(
         gate_statuses["security"] = status
 
     # Run FBR-specific gates (lint / error-prone): fbr profile + Gradle project only
-    is_gradle = detect_project(project_root).build_tool == "gradle"
-    if profile == "fbr" and is_gradle:
-        if "lint" in enabled_gates:
-            findings, status = run_external_gate(
-                "lint", "lint/java-lint.sh", files_to_scan, project_root
-            )
-            all_findings.extend(findings)
-            gate_statuses["lint"] = status
+    if profile == "fbr":
+        # Only detect project type when needed (fbr profile)
+        is_gradle = detect_project(project_root).build_tool == "gradle"
+        if is_gradle:
+            if "lint" in enabled_gates:
+                findings, status = run_external_gate(
+                    "lint", "lint/java-lint.sh", files_to_scan, project_root
+                )
+                all_findings.extend(findings)
+                gate_statuses["lint"] = status
 
-        if "error-prone" in enabled_gates:
-            findings, status = run_external_gate(
-                "error-prone", "error-prone/error-prone-scan.sh",
-                files_to_scan, project_root,
-            )
-            all_findings.extend(findings)
-            gate_statuses["error-prone"] = status
+            if "error-prone" in enabled_gates:
+                findings, status = run_external_gate(
+                    "error-prone", "error-prone/error-prone-scan.sh",
+                    files_to_scan, project_root,
+                )
+                all_findings.extend(findings)
+                gate_statuses["error-prone"] = status
 
         if "build" in enabled_gates:
             findings, status = run_external_gate(

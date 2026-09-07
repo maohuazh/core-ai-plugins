@@ -122,7 +122,13 @@ def scan_files(file_paths: list[str], project_root: Path) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser(description="Security pattern scanner")
-    parser.add_argument("--files", type=str, help="Comma-separated files to scan")
+    parser.add_argument(
+        "--files",
+        action="append",
+        default=[],
+        help="Files to scan (can be specified multiple times). "
+        "Each --files flag accepts a single file path, avoiding comma-separation issues.",
+    )
     parser.add_argument("--project-root", type=str, default=".", help="Project root")
     parser.add_argument("--json", action="store_true", help="Output JSON")
     args = parser.parse_args()
@@ -133,7 +139,7 @@ def main():
         # Scan all Java files under project root
         files = [str(p) for p in project_root.rglob("*.java") if "build" not in p.parts]
     else:
-        files = [f.strip() for f in args.files.split(",") if f.strip()]
+        files = [f for f in args.files if f]
 
     findings = scan_files(files, project_root)
 
