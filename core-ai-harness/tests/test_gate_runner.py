@@ -176,10 +176,54 @@ class TestGateRunner(unittest.TestCase):
             # lint/error-prone/build default enabled=false in config; only ast-grep+security run
             self.assertNotIn("lint", statuses)
 
+    @unittest.skipUnless(AST_GREP_AVAILABLE, "ast-grep not installed")
+    def test_severity_override_integration(self):
+        """Test that severity overrides from project .claude/gates.toml are applied.
 
-if __name__ == "__main__":
-    unittest.main()
+        This is a regression test for the P0 bug where project-level overrides
+        were silently ignored because load_config() didn't call merge_config_with_overrides().
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
 
+            # Create a Java file with a traditional for-loop (ERROR by default)
+            bad_file = project_root / "Bad.java"
+            bad_file.write_text(
+                "public class Bad {\n"
+                "  void f() {\n"
+                "    for (int i = 0; i < 10; i++) { System.out.println(i); }\n"
+                "  }\n"
+                "}\n"
+            )
+
+            # Create .claude/gates.toml to override severity to WARNING
+            claude_dir = project_root / ".claude"
+            claude_dir.mkdir()
+            (claude_dir / "gates.toml").write_text(
+                '[severity]\n'
+                'severity.ast-grep.no-traditional-for-loop = "WARNING"\n'
+            )
+
+            # Run gates - should apply the override
+            findings, _ = run_gates(
+                scope="files",
+                files=["Bad.java"],
+                project_root=project_root,
+                profile="default",
+            )
+
+            # Find the no-traditional-for-loop finding
+            for_loop_findings = [
+                f for f in findings if f.rule_id == "no-traditional-for-loop"
+            ]
+            self.assertGreater(len(for_loop_findings), 0, "Expected at least one finding")
+
+            # Verify severity was overridden to WARNING
+            self.assertEqual(
+                for_loop_findings[0].severity,
+                "WARNING",
+                "Severity override from .claude/gates.toml was not applied",
+            )
 
 
 if __name__ == "__main__":

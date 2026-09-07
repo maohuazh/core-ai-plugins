@@ -13,13 +13,16 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-
-# 模块级缓存：ast-grep 命令路径
-_ast_grep_cmd_cache: str | None = None
 import sys
 import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
+
+# Sentinel value to distinguish "not checked" from "confirmed not found"
+_AST_GREP_NOT_CHECKED = object()
+
+# 模块级缓存：ast-grep 命令路径
+_ast_grep_cmd_cache: str | object = _AST_GREP_NOT_CHECKED
 
 if TYPE_CHECKING:
     from . import Finding
@@ -35,12 +38,16 @@ from .report_formatter import format_findings
 # ============================================================================
 
 
-def load_config(config_path: Path | None = None) -> dict:
+def load_config(config_path: Path | None = None, project_root: Path | None = None) -> dict:
     """
-    Load gate configuration from config.toml.
+    Load gate configuration from config.toml, merged with project-level overrides.
+
+    Project-level overrides are loaded from .claude/gates.toml in the
+    project_root directory (or CWD if not specified) and merged using deep merge.
 
     Args:
         config_path: Path to config.toml. Defaults to gates/config.toml.
+        project_root: Project root directory. Defaults to CWD.
 
     Returns:
         Config dict.
@@ -48,16 +55,29 @@ def load_config(config_path: Path | None = None) -> dict:
     if config_path is None:
         config_path = GATES_DIR / "config.toml"
 
-    if not config_path.exists():
-        debug_log(f"Config not found: {config_path}")
-        return {}
+    if project_root is None:
+        project_root = Path.cwd()
 
+    base_config = {}
+    if config_path.exists():
+        try:
+            with open(config_path, "rb") as f:
+                base_config = tomllib.load(f)
+        except Exception as e:
+            debug_log(f"Failed to load config: {e}")
+            return {}
+
+    # Merge with project-level overrides from .claude/gates.toml
     try:
-        with open(config_path, "rb") as f:
-            return tomllib.load(f)
+        from .rule_loader import load_project_overrides, merge_config_with_overrides
+        project_overrides = load_project_overrides(project_root)
+        if project_overrides:
+            debug_log(f"Merged project overrides: {list(project_overrides.keys())}")
+            return merge_config_with_overrides(base_config, project_overrides)
     except Exception as e:
-        debug_log(f"Failed to load config: {e}")
-        return {}
+        debug_log(f"Failed to load/merge project overrides: {e}")
+
+    return base_config
 
 
 def get_active_profile(config: dict) -> str:
@@ -148,10 +168,13 @@ def apply_severity_overrides(
     """
     Apply [severity] overrides from config to findings.
 
-    Config format:
+    Config format (both forms supported):
         [severity]
+        # Form 1: TOML dotted key (parsed as nested structure)
         severity.ast-grep.no-while-loop = "WARNING"
-        severity.ast-grep.no-boolean-flag-state = "OFF"
+
+        # Form 2: Quoted key (parsed as flat key)
+        "ast-grep.no-while-loop" = "WARNING"
 
     Args:
         findings: List of Finding objects.
@@ -167,11 +190,20 @@ def apply_severity_overrides(
     # Build lookup: (gate, rule_id) -> severity
     overrides = {}
     for key, value in severity_cfg.items():
-        # Key format: "severity.<gate>.<rule_id>" (documented) or "<gate>.<rule_id>"
-        key = key.removeprefix("severity.")
-        gate, _, rule_id = key.partition(".")
-        if gate and rule_id:
-            overrides[(gate, rule_id)] = str(value).upper()
+        # Handle nested structure from TOML dotted keys
+        # e.g., severity.ast-grep.no-while-loop becomes nested dict
+        if isinstance(value, dict):
+            # Nested: key is "severity", value is {"ast-grep": {"no-while-loop": "WARNING"}}
+            for gate, rules in value.items():
+                if isinstance(rules, dict):
+                    for rule_id, sev in rules.items():
+                        overrides[(gate, rule_id)] = str(sev).upper()
+        else:
+            # Flat: key is "severity.ast-grep.no-while-loop" or "ast-grep.no-while-loop"
+            key_str = key.removeprefix("severity.")
+            gate, _, rule_id = key_str.partition(".")
+            if gate and rule_id:
+                overrides[(gate, rule_id)] = str(value).upper()
 
     if not overrides:
         return findings
@@ -536,12 +568,16 @@ def _parse_external_findings(
 
 
 def _find_ast_grep() -> str | None:
-    """Find ast-grep executable with module-level caching."""
+    """Find ast-grep executable with module-level caching.
+
+    Uses a sentinel value to distinguish 'not yet checked' from 'confirmed not found',
+    so that negative results are properly cached and we don't repeatedly spawn subprocesses.
+    """
     global _ast_grep_cmd_cache
 
-    # Check cache first
-    if _ast_grep_cmd_cache is not None:
-        return _ast_grep_cmd_cache
+    # Check cache first - only return if we've actually checked before
+    if _ast_grep_cmd_cache is not _AST_GREP_NOT_CHECKED:
+        return _ast_grep_cmd_cache if isinstance(_ast_grep_cmd_cache, str) else None
 
     # Prefer 'ast-grep' over deprecated 'sg'
     for cmd in ["ast-grep", "sg"]:
@@ -590,7 +626,7 @@ def run_gates(
     if project_root is None:
         project_root = Path.cwd()
 
-    config = load_config()
+    config = load_config(project_root=project_root)
 
     # Resolve profile: explicit arg wins, else config's active profile
     if profile is None:

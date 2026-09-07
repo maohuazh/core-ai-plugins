@@ -260,9 +260,7 @@ post_edit_gate.py (hook script)
     ↓
 _lib/gate_runner.py (execution engine)
     ↓
-gates/ast-grep/runner.sh (gate runner)
-    ↓
-ast-grep CLI (pattern matching)
+ast-grep CLI (pattern matching, invoked as subprocess)
     ↓
 JSON findings → Finding objects
     ↓

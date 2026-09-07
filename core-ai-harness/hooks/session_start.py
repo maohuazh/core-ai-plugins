@@ -14,6 +14,7 @@ before starting work.
 
 import sys
 import os
+import json
 from pathlib import Path
 
 # Add parent directory to Python path so we can import _lib
@@ -74,12 +75,23 @@ def main():
         "- PostToolUse hook automatically checks Java files after editing",
     ])
 
-    # Print context (will be injected into Claude's context)
-    print("\n".join(context_parts))
+    # Output as JSON with additionalContext for Claude Code hook system
+    output = {
+        "additionalContext": "\n".join(context_parts)
+    }
+    print(json.dumps(output))
 
     # Exit successfully (0 = no block)
     sys.exit(0)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # Catch-all: never let the hook fail with an error
+        # This prevents "hook error" messages from appearing
+        # Log to stderr for debugging
+        print(f"SessionStart hook error: {e}", file=sys.stderr)
+        sys.exit(0)
+

@@ -103,7 +103,8 @@ def _parse_diff_output(diff_text: str) -> list[FileDiff]:
     current_file = None
     current_added = []
     current_removed = []
-    current_line_num = 0
+    old_line_num = 0
+    new_line_num = 0
 
     for line in diff_text.splitlines():
         # Detect new file: +++ b/path/to/file
@@ -120,7 +121,8 @@ def _parse_diff_output(diff_text: str) -> list[FileDiff]:
             current_file = line[6:]  # Remove "+++ b/"
             current_added = []
             current_removed = []
-            current_line_num = 0
+            old_line_num = 0
+            new_line_num = 0
             continue
 
         # Detect hunk header: @@ -old_start,old_count +new_start,new_count @@
@@ -128,35 +130,53 @@ def _parse_diff_output(diff_text: str) -> list[FileDiff]:
             # Parse: @@ -1,5 +2,3 @@
             parts = line.split()
             if len(parts) >= 3:
+                # Extract old file line range: -old_start,old_count
+                old_range = parts[1]
+                if old_range.startswith("-"):
+                    old_range = old_range[1:]
+                    if "," in old_range:
+                        old_start, _ = old_range.split(",")
+                        try:
+                            old_line_num = int(old_start)
+                        except ValueError:
+                            old_line_num = 1
+                    else:
+                        try:
+                            old_line_num = int(old_range)
+                        except ValueError:
+                            old_line_num = 1
+
                 # Extract new file line range: +new_start,new_count
                 new_range = parts[2]
                 if new_range.startswith("+"):
                     new_range = new_range[1:]
                     if "," in new_range:
-                        new_start, new_count = new_range.split(",")
+                        new_start, _ = new_range.split(",")
                         try:
-                            current_line_num = int(new_start)
+                            new_line_num = int(new_start)
                         except ValueError:
-                            current_line_num = 1
+                            new_line_num = 1
                     else:
                         try:
-                            current_line_num = int(new_range)
+                            new_line_num = int(new_range)
                         except ValueError:
-                            current_line_num = 1
+                            new_line_num = 1
             continue
 
         # Track line numbers in hunk
         if current_file is not None:
             if line.startswith("+") and not line.startswith("+++"):
-                # Added line
-                current_added.append(current_line_num)
-                current_line_num += 1
+                # Added line (new file)
+                current_added.append(new_line_num)
+                new_line_num += 1
             elif line.startswith("-") and not line.startswith("---"):
-                # Removed line (don't increment current_line_num)
-                current_removed.append(current_line_num)
+                # Removed line (old file)
+                current_removed.append(old_line_num)
+                old_line_num += 1
             elif line.startswith(" "):
                 # Context line (with -U0 there shouldn't be any, but handle it)
-                current_line_num += 1
+                old_line_num += 1
+                new_line_num += 1
 
     # Save last file
     if current_file is not None:

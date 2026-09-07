@@ -29,7 +29,7 @@ from _lib import debug_log
 
 # Module-level cache to avoid redundant file system scans and config parsing
 _project_cache = {}
-_config_cache = None
+_config_cache = {}
 
 
 def get_cached_project_info(project_root: Path):
@@ -40,12 +40,18 @@ def get_cached_project_info(project_root: Path):
     return _project_cache[cache_key]
 
 
-def get_cached_config():
-    """Get cached config to avoid repeated TOML parsing."""
-    global _config_cache
-    if _config_cache is None:
-        _config_cache = load_config()
-    return _config_cache
+def get_cached_config(project_root: Path | None = None):
+    """Get cached config to avoid repeated TOML parsing.
+
+    Args:
+        project_root: Project root path. If None, uses CWD.
+    """
+    if project_root is None:
+        project_root = Path.cwd()
+    cache_key = str(project_root)
+    if cache_key not in _config_cache:
+        _config_cache[cache_key] = load_config()
+    return _config_cache[cache_key]
 
 
 SESSION_STATE_DIR = Path("/tmp/core-ai-harness")
@@ -104,7 +110,7 @@ def main():
     cwd = Path.cwd()
 
     # Get cached config and project info to avoid redundant I/O
-    config = get_cached_config()
+    config = get_cached_config(cwd)
     project_info = get_cached_project_info(cwd)
     debug_log(f"Project: {project_info.type}/{project_info.build_tool}")
 
