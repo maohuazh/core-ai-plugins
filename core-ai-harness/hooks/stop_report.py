@@ -31,7 +31,9 @@ def main():
         sys.exit(0)
 
     # CRITICAL: check stop_hook_active to prevent infinite loops
-    if not hook_input.get("stop_hook_active", False):
+    # 首次 Stop (stop_hook_active=False) → 应该检查并提醒
+    # 续跑状态 (stop_hook_active=True) → 直接退出，避免死循环
+    if hook_input.get("stop_hook_active", False):
         # Claude Code is in a stop-hook loop guard; do nothing
         sys.exit(0)
 

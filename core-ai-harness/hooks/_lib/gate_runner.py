@@ -13,6 +13,9 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+
+# 模块级缓存：ast-grep 命令路径
+_ast_grep_cmd_cache: str | None = None
 import sys
 import tomllib
 from pathlib import Path
@@ -97,8 +100,13 @@ def get_enabled_gates(config: dict, profile: str = "default") -> list[str]:
             continue
 
         # Check if gate is enabled in this profile
+        # If profiles field is missing/empty, default to ["default"]
         profiles = gate_config.get("profiles", ["default"])
-        if profile in profiles or "default" in profiles:
+
+        # Only enable if:
+        # 1. The current profile is explicitly in the profiles list, OR
+        # 2. The profiles list is empty (backward compatibility)
+        if profile in profiles or not profiles:
             if gate_config.get("enabled", True):
                 enabled.append(gate_name)
 
@@ -174,8 +182,20 @@ def apply_severity_overrides(
         if new_sev == "OFF":
             continue  # Rule disabled
         if new_sev in ("ERROR", "WARNING", "HINT"):
-            f.severity = new_sev
-        result.append(f)
+            # Create a new Finding object with overridden severity
+            new_finding = Finding(
+                rule_id=f.rule_id,
+                gate=f.gate,
+                file=f.file,
+                line=f.line,
+                col=f.col,
+                severity=new_sev,
+                message=f.message,
+                fixable=f.fixable,
+            )
+            result.append(new_finding)
+        else:
+            result.append(f)
 
     return result
 
@@ -516,7 +536,13 @@ def _parse_external_findings(
 
 
 def _find_ast_grep() -> str | None:
-    """Find ast-grep executable."""
+    """Find ast-grep executable with module-level caching."""
+    global _ast_grep_cmd_cache
+
+    # Check cache first
+    if _ast_grep_cmd_cache is not None:
+        return _ast_grep_cmd_cache
+
     # Prefer 'ast-grep' over deprecated 'sg'
     for cmd in ["ast-grep", "sg"]:
         try:
@@ -528,10 +554,13 @@ def _find_ast_grep() -> str | None:
             )
             if result.returncode == 0:
                 debug_log(f"Found {cmd}: {result.stdout.strip()}")
+                _ast_grep_cmd_cache = cmd
                 return cmd
         except Exception:
             continue
 
+    # Cache the negative result to avoid repeated subprocess calls
+    _ast_grep_cmd_cache = None
     return None
 
 

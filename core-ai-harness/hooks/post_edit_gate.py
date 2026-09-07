@@ -80,13 +80,9 @@ def main():
         # File doesn't exist, skip check
         sys.exit(0)
 
-    # Detect project type to determine which profile to use
-    cwd = Path.cwd()
-    project_info = detect_project(cwd)
-    debug_log(f"Project type: {project_info.type}, build tool: {project_info.build_tool}")
-
     # Run gates on the edited file
     # profile=None → uses config's active profile (see run_gates)
+    cwd = Path.cwd()
     findings, statuses = run_gates(
         scope="files",
         files=[str(file_path)],
@@ -94,12 +90,12 @@ def main():
         profile=None,
     )
 
-    # Check if any gate was skipped due to missing dependencies
+    # Log any skipped gates (dependencies missing) for debugging
+    # Skipped gates don't block the overall check; we continue with findings
+    # from the gates that did run successfully.
     skipped_gates = [g for g, status in statuses.items() if status == "skipped"]
     if skipped_gates:
-        # Dependencies missing, exit gracefully
-        # Don't block the user, just inform them
-        sys.exit(0)
+        debug_log(f"Skipped gates (dependencies missing): {skipped_gates}")
 
     # Filter for ERROR severity only (WARNING/HINT don't block)
     errors = [f for f in findings if f.severity == "ERROR"]

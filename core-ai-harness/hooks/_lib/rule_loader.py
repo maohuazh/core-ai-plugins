@@ -62,11 +62,18 @@ def _parse_frontmatter(content: str) -> dict | None:
     """
     Parse YAML-like frontmatter from markdown file.
 
+    Supports:
+    - Simple key: value pairs
+    - Quoted strings: name: "value" or name: 'value'
+    - Lists: tags: [fp, java]
+    - Multi-line strings: description: |\\n  Line 1\\n  Line 2
+
     Expected format:
     ---
     name: rule-name
     description: Rule description
     category: fp
+    tags: [fp, java]
     ---
 
     # Rule Content
@@ -79,6 +86,9 @@ def _parse_frontmatter(content: str) -> dict | None:
 
     metadata = {}
     in_frontmatter = False
+    current_key = None
+    multiline_buffer = []
+    multiline_indent = 0
 
     for i, line in enumerate(lines):
         if i == 0 and line.strip() == "---":
@@ -87,22 +97,51 @@ def _parse_frontmatter(content: str) -> dict | None:
 
         if in_frontmatter:
             if line.strip() == "---":
-                # End of frontmatter
+                # End of frontmatter - flush any pending multiline value
+                if current_key and multiline_buffer:
+                    metadata[current_key] = "\n".join(multiline_buffer)
                 break
 
-            # Parse key: value
-            if ":" in line:
+            # Check if this is a new key: value line
+            if ":" in line and not line.startswith(" ") and not line.startswith("\t"):
+                # Flush previous multiline value
+                if current_key and multiline_buffer:
+                    metadata[current_key] = "\n".join(multiline_buffer)
+                    multiline_buffer = []
+
                 key, _, value = line.partition(":")
                 key = key.strip()
                 value = value.strip()
+                current_key = key
 
-                # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-                elif value.startswith("'") and value.endswith("'"):
-                    value = value[1:-1]
+                # Check for multiline indicator
+                if value in ("|", ">"):
+                    # Multi-line string - collect indented lines
+                    multiline_buffer = []
+                    continue
 
-                metadata[key] = value
+                # Check for list syntax: [item1, item2]
+                if value.startswith("[") and value.endswith("]"):
+                    # Parse list
+                    list_content = value[1:-1]
+                    items = [item.strip() for item in list_content.split(",") if item.strip()]
+                    metadata[key] = items
+                    current_key = None  # Reset - no multiline following
+                else:
+                    # Simple value
+                    # Remove quotes if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+
+                    metadata[key] = value
+                    current_key = None
+            elif current_key and line.startswith("  "):
+                # This is a continuation line for multiline value
+                # Remove leading spaces (preserve relative indentation)
+                stripped = line.lstrip()
+                multiline_buffer.append(stripped)
 
     return metadata if metadata else None
 
@@ -134,12 +173,14 @@ def merge_config_with_overrides(
     base_config: dict, overrides: dict
 ) -> dict:
     """
-    Merge base config with project-level overrides.
+    Merge base config with project-level overrides using deep merge.
 
     Overrides can:
     - Enable/disable specific gates
     - Change severity levels
     - Add custom rules
+    - Override exclude paths
+    - Override profile settings
 
     Args:
         base_config: Base config from gates/config.toml.
@@ -148,24 +189,21 @@ def merge_config_with_overrides(
     Returns:
         Merged config dict.
     """
-    merged = base_config.copy()
+    return _deep_merge(base_config, overrides)
 
-    # Merge gates section
-    if "gates" in overrides:
-        if "gates" not in merged:
-            merged["gates"] = {}
 
-        for gate_name, gate_overrides in overrides["gates"].items():
-            if gate_name not in merged["gates"]:
-                merged["gates"][gate_name] = {}
-
-            merged["gates"][gate_name].update(gate_overrides)
-
-    # Merge profile section
-    if "profile" in overrides:
-        merged["profile"] = overrides["profile"]
-
-    return merged
+def _deep_merge(base: dict, override: dict) -> dict:
+    """
+    Recursively merge override dict into base dict.
+    Override values take precedence.
+    """
+    result = base.copy()
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
 
 
 def get_rules_summary(rules: list[dict], max_length: int = 1000) -> str:

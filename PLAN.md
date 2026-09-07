@@ -191,3 +191,40 @@ Core AI Harness 插件已完整实现，包括：
 1. 在实际 Java 项目中测试插件：`claude --plugin-dir ./core-ai-harness`
 2. 部署 FBR JAR：`/gate-install --kit /path/to/fbr-agent-gates`
 3. 可选：`claude plugin eval` 建一个最小评测目录
+
+## 代码审查修复（/code-review 反馈）
+
+基于 `/code-review` 的详细审查，发现并修复了以下问题：
+
+### 致命级问题（3 个）✅ 已修复
+
+| 问题 | 文件 | 行号 | 影响 | 修复 |
+|------|------|------|------|------|
+| `stop_hook_active` 检查逻辑反转 | `stop_report.py` | 34 | Stop hook 首次触发不检查，续跑时反而再次 block，提醒永不生效或死循环 | ✅ 修正逻辑：首次检查并提醒，续跑状态直接退出 |
+| 任何门禁 skipped 会丢弃其他门禁的全部发现 | `post_edit_gate.py` | 98 | ast-grep 缺失时安全漏洞零报告，session state 也不更新 | ✅ 改为只记录日志，继续处理其他门禁的发现 |
+| overrides 合并丢弃 severity/exclude 配置段 | `rule_loader.py` | 133 | 项目无法关闭噪音规则或排除 legacy 目录 | ✅ 使用 `_deep_merge` 递归深度合并 |
+
+### 中等级问题（3 个）✅ 已修复
+
+| 问题 | 文件 | 行号 | 影响 | 修复 |
+|------|------|------|------|------|
+| diff_parser 行号伪造 | `diff_parser.py` | 114 | 任何基于行号的增量扫描逻辑会查错位置 | ✅ 改用 `git diff -U0` + 解析 hunk header 获取真实行号 |
+| profiles 匹配逻辑失效 | `gate_runner.py` | 101 | 纯 fbr 门禁在 default profile 下也会运行 | ✅ 修正逻辑：profile 不在 profiles 列表时不启用 |
+| apply_severity_overrides 原地修改 Finding 对象 | `gate_runner.py` | 182 | 共享引用被污染，后续读取到被覆盖后的 severity | ✅ 创建新的 Finding 对象 |
+
+### 效率问题（3 个）✅ 已修复
+
+| 问题 | 文件 | 行号 | 影响 | 修复 |
+|------|------|------|------|------|
+| `_find_ast_grep` 每次都起子进程探测 PATH | `gate_runner.py` | 538 | PostToolUse 热路径增加 ~50-100ms 延迟 | ✅ 添加模块级缓存 `_ast_grep_cmd_cache` |
+| `detect_project` 重复调用 | `post_edit_gate.py` | 85 | 每次编辑做两遍文件系统探测 | ✅ 移除 hook 中的调用，只保留 gate_runner 内的调用 |
+| frontmatter 解析器不支持 YAML 语法 | `rule_loader.py` | 61 | 规则分类与搜索静默失真 | ✅ 支持列表和多行值 |
+
+### 测试验证
+
+修复后新增/更新了相关测试，验证修复效果：
+
+- ✅ 55 个单元测试全部通过
+- ✅ `test_real_line_numbers` - 验证 diff_parser 返回真实行号
+- ✅ 端到端测试：Stop hook 正确提醒未解决错误
+- ✅ 端到端测试：security 扫描在 ast-grep 缺失时仍能工作

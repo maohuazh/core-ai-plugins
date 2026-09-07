@@ -117,6 +117,41 @@ class TestDiffParser(unittest.TestCase):
         self.assertEqual(fd.total_deletions, 1)
         self.assertEqual(fd.file, "a.java")
 
+    def test_real_line_numbers(self):
+        """Test that diff parser returns actual line numbers, not synthetic ranges."""
+        # Create a file with multiple lines
+        (self.repo / "Test.java").write_text(
+            "class Test {\n"  # line 1
+            "  void method1() {}\n"  # line 2
+            "  void method2() {}\n"  # line 3
+            "  void method3() {}\n"  # line 4
+            "}\n"  # line 5
+        )
+        git(self.repo, "add", "Test.java")
+        git(self.repo, "commit", "-q", "-m", "add Test.java")
+
+        # Modify only line 4
+        (self.repo / "Test.java").write_text(
+            "class Test {\n"  # line 1
+            "  void method1() {}\n"  # line 2
+            "  void method2() {}\n"  # line 3
+            "  void method3() { int x = 42; }\n"  # line 4 (modified)
+            "}\n"  # line 5
+        )
+
+        diffs = get_changed_files(self.repo, mode="unstaged")
+        self.assertEqual(len(diffs), 1)
+        self.assertEqual(diffs[0].file, "Test.java")
+
+        # The added line should be line 4, not a synthetic range
+        self.assertIn(4, diffs[0].added_lines)
+        # The removed line should also be line 4 (old content)
+        self.assertIn(4, diffs[0].removed_lines)
+
+        # Should NOT have synthetic line numbers like 1, 2, 3
+        self.assertNotIn(1, diffs[0].added_lines)
+        self.assertNotIn(2, diffs[0].added_lines)
+
 
 if __name__ == "__main__":
     unittest.main()

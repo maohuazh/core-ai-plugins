@@ -54,8 +54,8 @@ def get_changed_files(
     else:
         project_root = Path(project_root).resolve()
 
-    # Build git diff command
-    cmd = ["git", "diff"]
+    # Build git diff command with -U0 to get zero context (only changed lines)
+    cmd = ["git", "diff", "-U0", "--no-color"]
 
     if mode == "staged":
         cmd.append("--staged")
@@ -63,8 +63,6 @@ def get_changed_files(
         if not commit_hash:
             raise ValueError("commit_hash required when mode='commit'")
         cmd.append(commit_hash)
-
-    cmd.extend(["--numstat", "--no-color"])
 
     # Run git diff
     try:
@@ -83,36 +81,90 @@ def get_changed_files(
     if result.returncode != 0:
         return []
 
-    # Parse numstat output: "added\tdeleted\tfilename"
+    # Parse diff output to extract file paths and line numbers
+    return _parse_diff_output(result.stdout)
+
+
+def _parse_diff_output(diff_text: str) -> list[FileDiff]:
+    """
+    Parse git diff -U0 output to extract file paths and line numbers.
+
+    Format:
+    diff --git a/file b/file
+    --- a/file
+    +++ b/file
+    @@ -old_start,old_count +new_start,new_count @@
+    -old line 1
+    -old line 2
+    +new line 1
+    +new line 2
+    """
     file_diffs = []
-    for line in result.stdout.strip().splitlines():
-        if not line.strip():
+    current_file = None
+    current_added = []
+    current_removed = []
+    current_line_num = 0
+
+    for line in diff_text.splitlines():
+        # Detect new file: +++ b/path/to/file
+        if line.startswith("+++ b/"):
+            # Save previous file if exists
+            if current_file is not None:
+                file_diffs.append(
+                    FileDiff(
+                        file=current_file,
+                        added_lines=current_added,
+                        removed_lines=current_removed,
+                    )
+                )
+            current_file = line[6:]  # Remove "+++ b/"
+            current_added = []
+            current_removed = []
+            current_line_num = 0
             continue
 
-        parts = line.split("\t")
-        if len(parts) != 3:
+        # Detect hunk header: @@ -old_start,old_count +new_start,new_count @@
+        if line.startswith("@@ ") and current_file is not None:
+            # Parse: @@ -1,5 +2,3 @@
+            parts = line.split()
+            if len(parts) >= 3:
+                # Extract new file line range: +new_start,new_count
+                new_range = parts[2]
+                if new_range.startswith("+"):
+                    new_range = new_range[1:]
+                    if "," in new_range:
+                        new_start, new_count = new_range.split(",")
+                        try:
+                            current_line_num = int(new_start)
+                        except ValueError:
+                            current_line_num = 1
+                    else:
+                        try:
+                            current_line_num = int(new_range)
+                        except ValueError:
+                            current_line_num = 1
             continue
 
-        added_str, deleted_str, file_path = parts
+        # Track line numbers in hunk
+        if current_file is not None:
+            if line.startswith("+") and not line.startswith("+++"):
+                # Added line
+                current_added.append(current_line_num)
+                current_line_num += 1
+            elif line.startswith("-") and not line.startswith("---"):
+                # Removed line (don't increment current_line_num)
+                current_removed.append(current_line_num)
+            elif line.startswith(" "):
+                # Context line (with -U0 there shouldn't be any, but handle it)
+                current_line_num += 1
 
-        # Binary files show "-" instead of numbers
-        if added_str == "-" or deleted_str == "-":
-            continue
-
-        try:
-            added_count = int(added_str)
-            deleted_count = int(deleted_str)
-        except ValueError:
-            continue
-
-        # For simplicity, we don't extract exact line numbers here.
-        # The gate_runner will pass the file list to ast-grep, which scans the whole file.
-        # Exact line numbers would require parsing the full diff output.
+    # Save last file
+    if current_file is not None:
         file_diffs.append(
             FileDiff(
-                file=file_path,
-                added_lines=list(range(1, added_count + 1)),  # Approximate
-                removed_lines=list(range(1, deleted_count + 1)),  # Approximate
+                file=current_file,
+                added_lines=current_added,
+                removed_lines=current_removed,
             )
         )
 
