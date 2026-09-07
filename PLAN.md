@@ -204,6 +204,16 @@ Core AI Harness 插件已完整实现，包括：
 | 任何门禁 skipped 会丢弃其他门禁的全部发现 | `post_edit_gate.py` | 98 | ast-grep 缺失时安全漏洞零报告，session state 也不更新 | ✅ 改为只记录日志，继续处理其他门禁的发现 |
 | overrides 合并丢弃 severity/exclude 配置段 | `rule_loader.py` | 133 | 项目无法关闭噪音规则或排除 legacy 目录 | ✅ 使用 `_deep_merge` 递归深度合并 |
 
+### 安全与健壮性问题（5 个）✅ 已修复（第二轮 /code-review）
+
+| 问题 | 文件 | 行号 | 影响 | 修复 |
+|------|------|------|------|------|
+| session_id 未消毒拼入写路径（路径穿越风险） | `post_edit_gate.py` | 69 | 恶意 session_id 可写入任意路径 | ✅ 移除 `/`、`\`、`..` 字符 |
+| session_id 未消毒拼入路径（路径穿越风险） | `stop_report.py` | 43 | 同上 | ✅ 同上 |
+| 逗号分隔文件列表脆弱 | `gate_runner.py` | 397 | 文件名含逗号时被错误拆分 | ✅ 改为多个 `--files` 参数 |
+| 逗号分隔文件列表脆弱 | `pattern_scanner.py` | 136 | 同上 | ✅ 改为 `action="append"` 支持多个 `--files` |
+| detect_project 无条件调用 | `gate_runner.py` | 680 | default profile 下白付 I/O | ✅ 移到 `if profile == "fbr":` 内部 |
+
 ### 中等级问题（3 个）✅ 已修复
 
 | 问题 | 文件 | 行号 | 影响 | 修复 |
