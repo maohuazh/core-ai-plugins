@@ -220,6 +220,41 @@ Core AI Harness 插件已完整实现，包括：
 | `detect_project` 重复调用 | `post_edit_gate.py` | 85 | 每次编辑做两遍文件系统探测 | ✅ 移除 hook 中的调用，只保留 gate_runner 内的调用 |
 | frontmatter 解析器不支持 YAML 语法 | `rule_loader.py` | 61 | 规则分类与搜索静默失真 | ✅ 支持列表和多行值 |
 
+### 实际项目测试验证 ✅
+
+**测试环境**：`/tmp/test-java-project/TestController.java`
+
+**测试场景**：包含 3 个典型 FP 违规的 Java 文件
+
+```java
+public class TestController {
+    public void badLoop() {
+        for (int i = 0; i < 10; i++) { ... }  // no-traditional-for-loop
+    }
+
+    public void badMutation(int x) {
+        x = x + 1;  // no-parameter-mutation
+    }
+
+    public void badAccumulator() {
+        int sum = 0;
+        for (int i = 0; i < 10; i++) {
+            sum += i;  // no-mutable-accumulator
+        }
+    }
+}
+```
+
+**检测结果**：
+
+| 严重度 | 行号 | 规则 | 描述 |
+|--------|------|------|------|
+| 🔴 ERROR | 6 | no-traditional-for-loop | 传统 for 循环应改用 Stream API |
+| 🔴 ERROR | 13 | no-parameter-mutation | 参数 x 被修改 |
+| 🟡 WARNING | 19 | no-mutable-accumulator | 可变累加器模式 |
+
+**测试结论**：✅ 插件在实际 Java 项目中正确检测到所有 3 个违规（2 ERROR + 1 WARNING）
+
 ### 测试验证
 
 修复后新增/更新了相关测试，验证修复效果：
@@ -228,3 +263,4 @@ Core AI Harness 插件已完整实现，包括：
 - ✅ `test_real_line_numbers` - 验证 diff_parser 返回真实行号
 - ✅ 端到端测试：Stop hook 正确提醒未解决错误
 - ✅ 端到端测试：security 扫描在 ast-grep 缺失时仍能工作
+- ✅ 实际项目测试：插件成功检测 Java 代码中的 FP 违规
