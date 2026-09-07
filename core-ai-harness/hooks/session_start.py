@@ -70,7 +70,7 @@ def main():
         "### Quick Start",
         "",
         "- Run `/gates` to manually check your code",
-        "- Run `/gates-fix` to automatically fix gate violations",
+        "- Run `/gate-fixer` to automatically fix gate violations",
         "- PostToolUse hook automatically checks Java files after editing",
     ])
 

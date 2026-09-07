@@ -1,11 +1,12 @@
 # AST-Grep Configuration — default profile
 # Rule directories (relative to this config file)
-# Profile: default → generic FP + security rules only.
+# Profile: default → generic FP rules only.
 # See sgconfig-fbr.yml for the FBR profile (adds shape rules).
+# Note: security rules are implemented by gates/security/pattern_scanner.py
+# (regex scanner), not as ast-grep rules.
 
 ruleDirs:
   - rules/fp
-  - rules/security
 
 # Language configuration
 languageGlobs:

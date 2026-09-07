@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Stop hook - lightweight session-end reminder (DEFAULT OFF).
+Stop hook - lightweight session-end reminder.
 
 IMPORTANT: Stop fires at the END OF EVERY TURN, not at session end.
-This hook is intentionally disabled by default in hooks.json.
+This hook checks for unresolved gate violations and reminds Claude.
 
-If enabled, it performs a LIGHTWEIGHT check only:
+It performs a LIGHTWEIGHT check only:
 - Checks whether this session has unresolved gate ERROR findings
 - Returns a decision:block with a short reason to remind Claude
 - MUST check `stop_hook_active` input to avoid infinite loops

@@ -23,9 +23,29 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from _lib import PLUGIN_ROOT, is_java_file
-from _lib.gate_runner import run_gates
+from _lib.gate_runner import run_gates, load_config
 from _lib.project_detector import detect_project
 from _lib import debug_log
+
+# Module-level cache to avoid redundant file system scans and config parsing
+_project_cache = {}
+_config_cache = None
+
+
+def get_cached_project_info(project_root: Path):
+    """Get cached project info to avoid repeated file system scans."""
+    cache_key = str(project_root)
+    if cache_key not in _project_cache:
+        _project_cache[cache_key] = detect_project(project_root)
+    return _project_cache[cache_key]
+
+
+def get_cached_config():
+    """Get cached config to avoid repeated TOML parsing."""
+    global _config_cache
+    if _config_cache is None:
+        _config_cache = load_config()
+    return _config_cache
 
 
 SESSION_STATE_DIR = Path("/tmp/core-ai-harness")
@@ -80,9 +100,16 @@ def main():
         # File doesn't exist, skip check
         sys.exit(0)
 
+    # Get current working directory
+    cwd = Path.cwd()
+
+    # Get cached config and project info to avoid redundant I/O
+    config = get_cached_config()
+    project_info = get_cached_project_info(cwd)
+    debug_log(f"Project: {project_info.type}/{project_info.build_tool}")
+
     # Run gates on the edited file
     # profile=None → uses config's active profile (see run_gates)
-    cwd = Path.cwd()
     findings, statuses = run_gates(
         scope="files",
         files=[str(file_path)],
@@ -126,7 +153,7 @@ def main():
         reason_parts.append(f"\n... and {len(errors) - 10} more violations")
 
     reason_parts.append("\nPlease fix these violations before proceeding.")
-    reason_parts.append("Use `/gates-fix` to auto-fix common issues.")
+    reason_parts.append("Use `/gate-fixer` to auto-fix common issues.")
 
     # Output JSON for Claude to see
     output = {

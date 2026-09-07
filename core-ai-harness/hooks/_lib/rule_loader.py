@@ -6,6 +6,7 @@ Loads rules from rules/*.md files and merges with project-level overrides.
 
 from __future__ import annotations
 
+import os
 import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -14,6 +15,9 @@ if TYPE_CHECKING:
     pass
 
 from . import RULES_DIR, debug_log
+
+# Module-level cache for rules metadata
+_rules_cache = {}
 
 
 def load_rules_metadata(rules_dir: Path | None = None) -> list[dict]:
@@ -33,6 +37,20 @@ def load_rules_metadata(rules_dir: Path | None = None) -> list[dict]:
     """
     if rules_dir is None:
         rules_dir = RULES_DIR
+
+    # Check cache using directory mtime
+    try:
+        dir_mtime = rules_dir.stat().st_mtime
+        cache_key = str(rules_dir)
+
+        if cache_key in _rules_cache:
+            cached_mtime, cached_rules = _rules_cache[cache_key]
+            if cached_mtime == dir_mtime:
+                debug_log(f"Using cached rules metadata for {rules_dir}")
+                return cached_rules
+    except OSError:
+        # If we can't stat the directory, skip cache
+        pass
 
     if not rules_dir.exists():
         debug_log(f"Rules directory not found: {rules_dir}")
@@ -54,6 +72,12 @@ def load_rules_metadata(rules_dir: Path | None = None) -> list[dict]:
                 rules.append(metadata)
         except Exception as e:
             debug_log(f"Failed to load {md_file}: {e}")
+
+    # Update cache
+    try:
+        _rules_cache[str(rules_dir)] = (dir_mtime, rules)
+    except OSError:
+        pass
 
     return rules
 
