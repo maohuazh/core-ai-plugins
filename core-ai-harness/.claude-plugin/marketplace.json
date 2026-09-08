@@ -47,7 +47,7 @@
         "PostToolUse hooks with automatic violation blocking",
         "SessionStart context injection",
         "5 skills: scanner, fixer, review, onboard, report",
-        "3 commands: /gates, /gates-check, /gates-install",
+        "3 commands: /gates, /gate-check, /gate-install",
         "Dual profile support (default and fbr)",
         "Project-level configuration overrides"
       ],
@@ -58,11 +58,11 @@
         },
         {
           "description": "Scan specific Java file",
-          "command": "/gates-check src/main/java/Service.java"
+          "command": "/gate-check src/main/java/Service.java"
         },
         {
           "description": "Install gates configuration to project",
-          "command": "/gates-install"
+          "command": "/gate-install"
         }
       ]
     }

@@ -27,7 +27,7 @@ Commands = 用户入口层（斜杠命令）
 - 🪝 **智能钩子** - PostToolUse 自动扫描，错误阻断 + AI 自修复
 - 📋 **编码规范** - FP 范式、架构约束、安全规则、代码风格
 - 🛠️ **5 个技能** - 扫描、修复、代码审查、项目初始化、报告生成
-- 📝 **3 个命令** - `/gates`、`/gates-check`、`/gates-install`
+- 📝 **3 个命令** - `/gates`、`/gate-check`、`/gate-install`
 
 **支持的 Profile：**
 - `default` - 通用 Java 项目（13 条 FP 规则 + 安全扫描）
@@ -63,10 +63,10 @@ claude plugin install --from /path/to/core-ai-plugins --user
 /gates
 
 # 扫描特定文件
-/gates-check src/main/java/Service.java
+/gate-check src/main/java/Service.java
 
 # 安装门禁配置到项目
-/gates-install
+/gate-install
 ```
 
 ### 验证安装
