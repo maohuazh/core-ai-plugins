@@ -1,21 +1,70 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "core-ai-harness",
-  "description": "AI-augmented development harness with gates, hooks, and rules for code quality enforcement",
+  "description": "AI-augmented development harness with automated gates, hooks, and rules for code quality enforcement",
   "owner": {
     "name": "murphy",
     "email": "maohua.zh@gmail.com"
   },
+  "keywords": [
+    "code-quality",
+    "static-analysis",
+    "ast-grep",
+    "fp-paradigm",
+    "java",
+    "automation",
+    "hooks",
+    "gates"
+  ],
+  "categories": [
+    "development-tools",
+    "code-quality",
+    "automation"
+  ],
   "plugins": [
     {
       "name": "core-ai-harness",
-      "description": "Automated code quality gates (AST-Grep FP rules), edit hooks, and AI rules for Java projects",
+      "description": "Automated code quality gates with 43 AST-Grep rules for Java FP paradigm, security scanning, and AI-powered code review. Features PostToolUse hooks for automatic violation detection and self-correction.",
       "author": {
         "name": "murphy",
         "email": "maohua.zh@gmail.com"
       },
       "version": "0.1.0",
-      "source": "."
+      "source": ".",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/maohuazh/core-ai-plugins.git"
+      },
+      "homepage": "https://github.com/maohuazh/core-ai-plugins/tree/main/core-ai-harness",
+      "documentation": "https://github.com/maohuazh/core-ai-plugins/blob/main/core-ai-harness/README.md",
+      "dependencies": {
+        "ast-grep": ">=0.45.0",
+        "python": ">=3.11.0"
+      },
+      "features": [
+        "43 AST-Grep rules for Java FP paradigm",
+        "Security pattern scanning (secrets, SQL injection, empty catch)",
+        "PostToolUse hooks with automatic violation blocking",
+        "SessionStart context injection",
+        "5 skills: scanner, fixer, review, onboard, report",
+        "3 commands: /gates, /gates-check, /gates-install",
+        "Dual profile support (default and fbr)",
+        "Project-level configuration overrides"
+      ],
+      "examples": [
+        {
+          "description": "Check code quality for all changed files",
+          "command": "/gates"
+        },
+        {
+          "description": "Scan specific Java file",
+          "command": "/gates-check src/main/java/Service.java"
+        },
+        {
+          "description": "Install gates configuration to project",
+          "command": "/gates-install"
+        }
+      ]
     }
   ]
 }
