@@ -10,7 +10,7 @@ Claude Code 插件：Kibana 日志分析工具集。
 
 ```bash
 # 方式一：通过 /plugin 命令安装
-/plugin marketplace add <your-marketplace-url-or-git-path>
+/plugin marketplace add maohuazh/core-ai-plugins
 /plugin install core-ng
 
 # 方式二：直接克隆后本地加载

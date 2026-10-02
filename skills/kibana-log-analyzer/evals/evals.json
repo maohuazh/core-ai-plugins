@@ -1,0 +1,25 @@
+{
+  "skill_name": "kibana-log-analyzer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我分析最近一小时内的 ERROR 日志，看看有哪些报错",
+      "expected_output": "Query action-* index for ERROR logs in last 1 hour, group by (app, action, error_code), dispatch SubAgents per group, generate summary and detailed reports with root cause analysis and source code references."
+    },
+    {
+      "id": 2,
+      "prompt": "这个 correlation_id: abc-123-def-456 的调用链出了好几次错，帮我查一下具体是什么原因",
+      "expected_output": "Query action-* index with the specific correlation_id, trace the full call chain, fetch trace-* details for each error, analyze source code for root cause, provide impact assessment and fix proposal."
+    },
+    {
+      "id": 3,
+      "prompt": "最近 payment-service 的 ORDER_TIMEOUT 错误一直在报，帮我做个详细的根因分析，包括影响范围评估",
+      "expected_output": "Query action-* index filtering for app=payment-service and error_code=ORDER_TIMEOUT, group and count occurrences, dispatch SubAgents for deep analysis with source code tracing, assess impact scope and severity (P0-P4), propose specific fixes."
+    },
+    {
+      "id": 4,
+      "prompt": "I'm seeing a spike in errors on the order-service. Can you check the action index for the last hour and tell me what's going on?",
+      "expected_output": "Query action-* index for ERROR logs in last 1 hour, optionally filter for order-service, group by (app, action, error_code), fetch trace details, dispatch SubAgents, generate comprehensive report with root cause, impact assessment, and fix recommendations."
+    }
+  ]
+}
