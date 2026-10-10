@@ -18,13 +18,27 @@ message: |
 
 note: "Violates Imperative Red Flags: Accumulators constructed by mutation"
 
-# Simplified: matches any .add() call on a collection variable.
-# This catches mutable accumulator patterns in most cases.
-# Full context-aware detection (checking if inside a loop) is complex
-# in ast-grep due to deep nesting; this simplified version is a practical
-# trade-off between precision and coverage.
-#
-# Future enhancement: use `inside` with proper `stopBy` to limit to loops.
 rule:
-  kind: method_invocation
-  pattern: $VAR.add($$$ARGS)
+  # Match `.add()` expression statements that have a loop ancestor.
+  # `stopBy: end` is required: with the default `stopBy: neighbor` the search
+  # stops at the loop body block and never reaches the for/while statement,
+  # so the rule silently matches nothing (as observed with ast-grep 0.45).
+  any:
+    - all:
+        - kind: expression_statement
+        - pattern: $VAR.add($$$);
+        - inside:
+            kind: for_statement
+            stopBy: end
+    - all:
+        - kind: expression_statement
+        - pattern: $VAR.add($$$);
+        - inside:
+            kind: enhanced_for_statement
+            stopBy: end
+    - all:
+        - kind: expression_statement
+        - pattern: $VAR.add($$$);
+        - inside:
+            kind: while_statement
+            stopBy: end

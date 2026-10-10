@@ -9,27 +9,56 @@ Install core-ai-harness in the current project.
 ## Usage
 
 ```
+/gate-install [--profile default|fbr] [--kit <fbr-agent-gates-dir>] [--force]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--profile <name>` | Profile to write into `.claude/gates.toml` (`default` or `fbr`). Default: auto-detect — projects importing `core.framework.*` are treated as FBR. |
+| `--kit <dir>` | FBR agent kit directory (`fbr-agent-gates`) whose `tools/.dist/*.jar` get deployed into the plugin's `gates/lint/.dist/` and `gates/error-prone/.dist/`. |
+| `--force` | Overwrite an existing `.claude/gates.toml`. By default an existing file is left untouched. |
+
+Run from the target project root. The command delegates to
+`gates/install.py`:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT:-.}/gates/install.py" --project-root "$(pwd)" [options]
+```
+
+## Examples
+
+Install with the default (generic) profile:
+```
 /gate-install
+```
+
+Install an FBR project and deploy its lint/error-prone JARs:
+```
+/gate-install --profile fbr --kit ~/Downloads/fbr-agent-gates
+```
+
+Force-regenerate the project config:
+```
+/gate-install --force
 ```
 
 ## What it does
 
-1. **Check Prerequisites**
-   - Verifies Python 3.11+ is available
-   - Checks if ast-grep is installed
-   - Detects project type
+1. **Copy Rules** - Copies `rules/*.md` to `.claude/rules/`
+2. **Create Configuration** - Creates `.claude/gates.toml` if it doesn't exist
+   (profile auto-detected: `fbr` when the project imports `core.framework.*`)
+3. **Deploy Kit** (with `--kit`) - Copies `java-lint.jar` and
+   `error-prone.jar` from `<kit>/tools/.dist/` into the plugin's
+   `gates/lint/.dist/` and `gates/error-prone/.dist/`, and enables those two
+   gates in the generated `.claude/gates.toml`
+4. **Verify** - Reports toolchain (python/ast-grep), installed rules, and
+   deployed JARs
 
-2. **Copy Rules**
-   - Copies `rules/*.md` to `.claude/rules/`
-   - Makes rules available to Claude automatically
-
-3. **Create Configuration**
-   - Creates `.claude/gates.toml` if it doesn't exist
-   - Sets up default profile (or fbr profile if detected)
-
-4. **Verify Installation**
-   - Runs a test scan to confirm gates work
-   - Reports any issues
+> The JARs are NOT shipped in the repo (~25MB each, FBR-specific). They are
+> deployed into the plugin's own `gates/<gate>/.dist/` directory — that is
+> where `gate_runner` looks for them, and they are shared by every project
+> that uses the plugin. Re-run `--kit` after reinstalling the plugin or on a
+> fresh machine.
 
 ## Manual Installation
 
@@ -67,19 +96,23 @@ claude --plugin-dir /path/to/core-ai-harness
 After installation, customize `.claude/gates.toml`:
 
 ```toml
-# Use FBR profile for FBR projects
+# Use FBR profile for core-ng / FBR projects
 [profile]
 active = "fbr"
 
 # Disable specific gates
-[gates]
-security.enabled = false
+[gates.security]
+enabled = false
 
-# Enable FBR-specific gates
-[gates.fbr]
-lint.enabled = true
-error-prone.enabled = true
-build.enabled = true
+# Enable FBR-specific gates (JARs must be deployed via --kit)
+[gates.lint]
+enabled = true
+
+[gates.error-prone]
+enabled = true
+
+[gates.build]
+enabled = true
 ```
 
 ## Verification
@@ -115,6 +148,13 @@ ls .claude/rules/
 Check configuration:
 ```bash
 cat .claude/gates.toml
+```
+
+### lint / error-prone reported as "skipped"
+
+The JARs are missing. Deploy them from the FBR agent kit:
+```
+/gate-install --kit /path/to/fbr-agent-gates
 ```
 
 ## Next Steps
