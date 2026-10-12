@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Hypothesis",
+  "description": "LogScope 假设 Schema",
+  "type": "object",
+  "required": [
+    "hypothesis_id",
+    "category",
+    "statement",
+    "status",
+    "confidence",
+    "supporting_evidence",
+    "counter_evidence",
+    "missing_evidence",
+    "next_action"
+  ],
+  "properties": {
+    "hypothesis_id": {
+      "type": "string",
+      "description": "假设唯一标识",
+      "pattern": "^H-[A-Z]+-[0-9]{3}$",
+      "examples": ["H-DATA-001", "H-LOGIC-002"]
+    },
+    "category": {
+      "type": "string",
+      "description": "根因分类",
+      "enum": [
+        "data_error",
+        "logic_error",
+        "flow_error",
+        "network_error",
+        "resource_error",
+        "config_permission_error",
+        "unknown"
+      ]
+    },
+    "statement": {
+      "type": "string",
+      "description": "可证伪的假设描述"
+    },
+    "status": {
+      "type": "string",
+      "description": "假设状态",
+      "enum": ["proposed", "testing", "supported", "rejected", "inconclusive"]
+    },
+    "confidence": {
+      "type": "string",
+      "description": "置信度",
+      "enum": ["high", "medium", "low", "unknown"]
+    },
+    "supporting_evidence": {
+      "type": "array",
+      "description": "支持证据 ID 列表",
+      "items": { "type": "string" }
+    },
+    "counter_evidence": {
+      "type": "array",
+      "description": "反证证据 ID 列表",
+      "items": { "type": "string" }
+    },
+    "missing_evidence": {
+      "type": "array",
+      "description": "缺失证据说明",
+      "items": { "type": "string" }
+    },
+    "next_action": {
+      "type": "string",
+      "description": "下一步验证动作"
+    },
+    "alternative_explanations": {
+      "type": "array",
+      "description": "替代解释列表",
+      "items": {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "description": { "type": "string" },
+          "likelihood": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "evidence_required": { "type": "string" }
+        }
+      }
+    },
+    "remaining_gaps": {
+      "type": "array",
+      "description": "剩余缺口",
+      "items": { "type": "string" }
+    }
+  }
+}

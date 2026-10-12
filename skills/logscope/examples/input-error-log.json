@@ -1,0 +1,59 @@
+{
+  "description": "示例输入：Kibana 错误日志（基于实际生产日志）",
+  "input": {
+    "source": "action-2026.10.10",
+    "document_id": "A1258818F02B8859C9E8",
+    "kibana_url": "https://kibana.connexup-dev.net/app/discover#/doc/action-pattern/action-2026.10.10?id=A1258818F02B8859C9E8"
+  },
+  "action_log": {
+    "_index": "action-2026.10.10",
+    "_id": "A1258818F02B8859C9E8",
+    "_source": {
+      "@timestamp": "2026-10-10T11:17:18.704896811Z",
+      "id": "A1258818F02B8859C9E8",
+      "app": "report-service",
+      "host": "report-service-66555d7449-x5t9b",
+      "result": "ERROR",
+      "ref_id": ["A1258818EADBFBE7C5BC"],
+      "correlation_id": ["A1258818EADBFBE7C5BC"],
+      "client": ["merchant-site"],
+      "action": "api:put:/bo/report/ads/campaign/summary",
+      "error_code": "core.framework.db.UncheckedSQLException",
+      "error_message": "Unknown column 'channel' in 'where clause', sqlState=42S22, errorCode=1054",
+      "elapsed": 5745546,
+      "context": {
+        "controller": ["app.report.web.BOReportWebServiceImpl.getAdsCampaignSummary"],
+        "response_code": ["500"],
+        "method": ["PUT"],
+        "client_ip": ["10.0.66.110"],
+        "merchant_id": ["d5673e51-9e7b-4e64-957d-767b67df8db7"],
+        "path_pattern": ["/bo/report/ads/campaign/summary"],
+        "request_url": ["https://report-service/bo/report/ads/campaign/summary"]
+      },
+      "stats": {
+        "response_body_length": 2874,
+        "db_queries": 1,
+        "http_delay": 182893,
+        "request_body_length": 203
+      },
+      "perf_stats": {
+        "db": {
+          "total_elapsed": 4309781,
+          "count": 1
+        }
+      }
+    }
+  },
+  "trace_log": {
+    "_index": "trace-2026.10.10",
+    "_id": "A1258818F02B8859C9E8",
+    "_source": {
+      "@timestamp": "2026-10-10T11:17:18.704896811Z",
+      "app": "report-service",
+      "result": "ERROR",
+      "action": "api:put:/bo/report/ads/campaign/summary",
+      "error_code": "core.framework.db.UncheckedSQLException",
+      "content": "00:00.000011812 c.f.i.log.ActionLog - === http begin ===\n00:00.000013135 c.f.i.log.ActionLog - id=A1258818F02B8859C9E8\n00:00.000049724 c.f.i.w.request.RequestParser - [request] method=PUT, requestURL=https://report-service/bo/report/ads/campaign/summary\n00:00.000077346 c.f.i.w.request.RequestParser - [request:header] correlation-id=A1258818EADBFBE7C5BC\n00:00.000070433 c.f.i.w.request.RequestParser - [request:header] ref-id=A1258818EADBFBE7C5BC\n00:00.000425264 c.f.i.log.ActionLog - [context] merchant_id=d5673e51-9e7b-4e64-957d-767b67df8db7\n00:00.004898034 c.f.i.db.DatabaseImpl - selectOne, sql=SELECT COUNT(*) AS sent_messages, COUNT(DISTINCT customer_id) AS sent_customers FROM ads_campaign_customers WHERE 1=1 AND merchant_id = ? AND start_time >= ? AND start_time <= ? AND channel IN (?, ?) , params=[d5673e51-9e7b-4e64-957d-767b67df8db7, 2026-07-08T16:00Z, 2026-10-09T15:59:59.999999999Z, EMAIL, MOBILE_APP], returnedRows=0, elapsed=4309781\n00:00.004912411 ERROR c.f.i.log.LogManager - [core.framework.db.UncheckedSQLException] Unknown column 'channel' in 'where clause', sqlState=42S22, errorCode=1054\n00:00.005578651 c.f.i.w.response.ResponseHandler - [response] statusCode=500\n00:00.005746619 c.f.i.log.ActionLog - elapsed=5745546\n00:00.005747450 c.f.i.log.ActionLog - === http end ==="
+    }
+  }
+}

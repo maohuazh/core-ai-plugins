@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Report Data",
+  "description": "LogScope HTML 报告数据 Schema",
+  "type": "object",
+  "required": [
+    "investigation_id",
+    "generated_at",
+    "summary",
+    "root_cause",
+    "timeline",
+    "causal_chain",
+    "log_evidence",
+    "database_checks",
+    "counter_evidence",
+    "unresolved_questions",
+    "limitations",
+    "evidence_index"
+  ],
+  "properties": {
+    "investigation_id": {
+      "type": "string",
+      "description": "调查 ID"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "报告生成时间"
+    },
+    "summary": {
+      "type": "object",
+      "description": "调查摘要",
+      "required": ["symptom", "impact", "time_range", "conclusion"],
+      "properties": {
+        "symptom": { "type": "string" },
+        "impact": { "type": "string" },
+        "time_range": {
+          "type": "object",
+          "properties": {
+            "from": { "type": "string", "format": "date-time" },
+            "to": { "type": "string", "format": "date-time" }
+          }
+        },
+        "conclusion": { "type": "string" }
+      }
+    },
+    "root_cause": {
+      "type": "object",
+      "description": "根因结论",
+      "required": ["category", "statement", "confidence", "confidence_reason", "evidence_ids"],
+      "properties": {
+        "category": { "type": "string" },
+        "statement": { "type": "string" },
+        "confidence": { "type": "string" },
+        "confidence_reason": { "type": "string" },
+        "evidence_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "description": "事件时间线",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "service", "event", "log_id", "event_kind"],
+        "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "service": { "type": "string" },
+          "event": { "type": "string" },
+          "log_id": { "type": "string" },
+          "event_kind": { "type": "string" }
+        }
+      }
+    },
+    "causal_chain": {
+      "type": "array",
+      "description": "因果链",
+      "items": {
+        "type": "object",
+        "required": ["step", "description", "evidence_ids"],
+        "properties": {
+          "step": { "type": "integer" },
+          "phase": { "type": "string" },
+          "description": { "type": "string" },
+          "evidence_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "log_evidence": {
+      "type": "array",
+      "description": "日志证据",
+      "items": {
+        "type": "object",
+        "required": ["evidence_id", "log_id", "timestamp", "service", "level", "error_code", "error_message"],
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "log_id": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "service": { "type": "string" },
+          "level": { "type": "string" },
+          "error_code": { "type": "string" },
+          "error_message": { "type": "string" },
+          "stack_trace": { "type": "string" }
+        }
+      }
+    },
+    "database_checks": {
+      "type": "array",
+      "description": "数据库验证",
+      "items": {
+        "type": "object",
+        "required": ["evidence_id", "query_id", "datasource_id", "purpose", "query", "status"],
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "query_id": { "type": "string" },
+          "datasource_id": { "type": "string" },
+          "datasource_role": { "type": "string" },
+          "purpose": { "type": "string" },
+          "query": { "type": "string" },
+          "status": { "type": "string" },
+          "row_count": { "type": "integer" },
+          "execution_time_ms": { "type": "integer" },
+          "interpretation": { "type": "string" }
+        }
+      }
+    },
+    "counter_evidence": {
+      "type": "array",
+      "description": "反证与替代解释",
+      "items": {
+        "type": "object",
+        "required": ["title", "description"],
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "supporting_evidence": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "counter_evidence": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "conclusion": { "type": "string" }
+        }
+      }
+    },
+    "unresolved_questions": {
+      "type": "array",
+      "description": "未解决问题",
+      "items": { "type": "string" }
+    },
+    "limitations": {
+      "type": "object",
+      "description": "调查覆盖范围与限制",
+      "required": ["time_range", "services", "log_search_status", "database_query_status"],
+      "properties": {
+        "time_range": { "type": "string" },
+        "services": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "log_search_status": { "type": "string" },
+        "database_query_status": { "type": "string" },
+        "partial_results": { "type": "boolean" },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "evidence_index": {
+      "type": "array",
+      "description": "证据索引",
+      "items": {
+        "type": "object",
+        "required": ["evidence_id", "type", "source", "summary"],
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "type": { "type": "string" },
+          "source": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    }
+  }
+}

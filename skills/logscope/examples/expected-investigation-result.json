@@ -1,0 +1,210 @@
+{
+  "investigation_id": "INV-2026-10-10-001",
+  "status": "completed",
+  "problem_summary": "广告报表接口返回 500 错误，用户无法查看广告投放效果数据",
+  "scope": {
+    "environment": "dev",
+    "time_range": {
+      "from": "2026-10-10T10:47:18Z",
+      "to": "2026-10-10T11:47:18Z"
+    },
+    "services": ["report-service"],
+    "correlation_ids": ["A1258818EADBFBE7C5BC"],
+    "business_keys": [
+      {
+        "field": "context.merchant_id",
+        "value": "d5673e51-9e7b-4e64-957d-767b67df8db7"
+      }
+    ]
+  },
+  "primary_root_cause": {
+    "category": "data_error",
+    "statement": "SQL 查询引用了不存在的列 'channel'，导致 MySQL 语法错误（sqlState=42S22, errorCode=1054）。ads_campaign_customers 表中不存在 channel 列，但代码中的 SQL 查询尝试使用该列进行过滤。",
+    "confidence": "high",
+    "evidence_ids": ["ev-log-001", "ev-trace-001", "ev-sql-001"]
+  },
+  "timeline": [
+    {
+      "timestamp": "2026-10-10T11:17:18.704Z",
+      "service": "report-service",
+      "event": "收到广告报表查询请求",
+      "log_id": "A1258818F02B8859C9E8",
+      "evidence_id": "ev-log-001",
+      "event_kind": "normal"
+    },
+    {
+      "timestamp": "2026-10-10T11:17:18.709Z",
+      "service": "report-service",
+      "event": "执行 SQL 查询：SELECT COUNT(*) FROM ads_campaign_customers WHERE channel IN (...)",
+      "log_id": "A1258818F02B8859C9E8",
+      "evidence_id": "ev-trace-001",
+      "event_kind": "normal"
+    },
+    {
+      "timestamp": "2026-10-10T11:17:18.709Z",
+      "service": "report-service",
+      "event": "MySQL 返回错误：Unknown column 'channel' in 'where clause'",
+      "log_id": "A1258818F02B8859C9E8",
+      "evidence_id": "ev-trace-001",
+      "event_kind": "failure"
+    },
+    {
+      "timestamp": "2026-10-10T11:17:18.710Z",
+      "service": "report-service",
+      "event": "抛出 UncheckedSQLException 异常",
+      "log_id": "A1258818F02B8859C9E8",
+      "evidence_id": "ev-log-001",
+      "event_kind": "failure"
+    },
+    {
+      "timestamp": "2026-10-10T11:17:18.710Z",
+      "service": "report-service",
+      "event": "HTTP 响应返回 500 状态码",
+      "log_id": "A1258818F02B8859C9E8",
+      "evidence_id": "ev-log-001",
+      "event_kind": "failure"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "H-DATA-001",
+      "category": "data_error",
+      "statement": "SQL 查询引用了不存在的列 'channel'，导致语法错误",
+      "status": "supported",
+      "confidence": "high",
+      "supporting_evidence": ["ev-log-001", "ev-trace-001", "ev-sql-001"],
+      "counter_evidence": [],
+      "missing_evidence": [],
+      "next_action": "已验证，无需进一步操作"
+    },
+    {
+      "hypothesis_id": "H-DATA-002",
+      "category": "data_error",
+      "statement": "数据库 schema 迁移未完成，channel 列应该在最近的迁移中添加但未成功",
+      "status": "rejected",
+      "confidence": "high",
+      "supporting_evidence": [],
+      "counter_evidence": ["ev-sql-001"],
+      "missing_evidence": [],
+      "next_action": "已排除，数据库查询确认 channel 列不存在"
+    },
+    {
+      "hypothesis_id": "H-LOGIC-001",
+      "category": "logic_error",
+      "statement": "代码中的 SQL 查询语句编写错误，引用了错误的列名",
+      "status": "supported",
+      "confidence": "high",
+      "supporting_evidence": ["ev-trace-001"],
+      "counter_evidence": [],
+      "missing_evidence": ["代码审查结果"],
+      "next_action": "检查 BOAdsCampaignReportService.java:34 行的 SQL 查询代码"
+    }
+  ],
+  "database_checks": [
+    {
+      "query_id": "Q1",
+      "datasource_id": "mysql-report-db",
+      "purpose": "验证 ads_campaign_customers 表中是否存在 channel 列",
+      "hypothesis_id": "H-DATA-001",
+      "query_type": "sql",
+      "query_intent": "SHOW COLUMNS FROM ads_campaign_customers LIKE 'channel'",
+      "required_fields": ["Field", "Type"],
+      "safety_notes": ["只读查询", "仅查询表结构"],
+      "status": "no_rows",
+      "row_count": 0,
+      "truncated": false,
+      "evidence_id": "ev-sql-001",
+      "interpretation": "channel 列在 ads_campaign_customers 表中不存在"
+    },
+    {
+      "query_id": "Q2",
+      "datasource_id": "mysql-report-db",
+      "purpose": "获取 ads_campaign_customers 表的完整列列表",
+      "hypothesis_id": "H-DATA-001",
+      "query_type": "sql",
+      "query_intent": "SHOW COLUMNS FROM ads_campaign_customers",
+      "required_fields": ["Field", "Type"],
+      "safety_notes": ["只读查询", "仅查询表结构"],
+      "status": "completed",
+      "row_count": 8,
+      "truncated": false,
+      "evidence_id": "ev-sql-002",
+      "interpretation": "表结构包含 8 个列：id, merchant_id, customer_id, campaign_id, status, created_at, updated_at, sent_at，不包含 channel 列"
+    }
+  ],
+  "causal_chain": [
+    {
+      "step": 1,
+      "description": "用户发起广告报表查询请求（PUT /bo/report/ads/campaign/summary）",
+      "evidence_ids": ["ev-log-001"]
+    },
+    {
+      "step": 2,
+      "description": "应用执行 SQL 查询：SELECT COUNT(*) FROM ads_campaign_customers WHERE channel IN ('EMAIL', 'MOBILE_APP')",
+      "evidence_ids": ["ev-trace-001"]
+    },
+    {
+      "step": 3,
+      "description": "MySQL 检测到 channel 列不存在，返回语法错误（sqlState=42S22, errorCode=1054）",
+      "evidence_ids": ["ev-trace-001", "ev-sql-001"]
+    },
+    {
+      "step": 4,
+      "description": "应用抛出 UncheckedSQLException 异常",
+      "evidence_ids": ["ev-log-001"]
+    },
+    {
+      "step": 5,
+      "description": "HTTP 响应返回 500 Internal Server Error",
+      "evidence_ids": ["ev-log-001"]
+    }
+  ],
+  "counter_evidence": [
+    {
+      "evidence_id": "ev-sql-001",
+      "description": "数据库查询确认 channel 列不存在，排除了数据库 schema 迁移未完成的可能性"
+    }
+  ],
+  "unresolved_questions": [
+    "为什么代码中会引用不存在的 channel 列？需要检查最近的代码提交记录",
+    "是否有其他接口也引用了 channel 列？需要进行全局代码搜索",
+    "channel 列是否应该在数据库中存在？需要检查数据库设计文档"
+  ],
+  "coverage_and_limitations": {
+    "log_search_status": "completed",
+    "database_query_status": "completed",
+    "partial_results": false,
+    "limitations": [
+      "未进行代码审查，无法确定 channel 列引用是何时引入的",
+      "未进行全局代码搜索，无法确定是否有其他接口受到影响",
+      "日志索引延迟约 5 秒，但本次调查的时间窗口足够大，不影响结果"
+    ]
+  },
+  "evidence_index": [
+    {
+      "evidence_id": "ev-log-001",
+      "type": "log",
+      "source": "action-2026.10.10",
+      "summary": "广告报表查询失败：Unknown column 'channel' in 'where clause'"
+    },
+    {
+      "evidence_id": "ev-trace-001",
+      "type": "log",
+      "source": "trace-2026.10.10",
+      "summary": "SQL 查询详情：SELECT COUNT(*) FROM ads_campaign_customers WHERE channel IN ('EMAIL', 'MOBILE_APP')"
+    },
+    {
+      "evidence_id": "ev-sql-001",
+      "type": "sql",
+      "source": "mysql-report-db",
+      "summary": "SHOW COLUMNS FROM ads_campaign_customers LIKE 'channel' 返回 0 行"
+    },
+    {
+      "evidence_id": "ev-sql-002",
+      "type": "sql",
+      "source": "mysql-report-db",
+      "summary": "SHOW COLUMNS FROM ads_campaign_customers 返回 8 行，不包含 channel 列"
+    }
+  ],
+  "report_generated_at": "2026-10-10T11:30:00Z"
+}
