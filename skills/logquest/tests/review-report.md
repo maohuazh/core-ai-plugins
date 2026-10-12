@@ -1,4 +1,4 @@
-# LogScope Skill 自循环 Review 报告
+# LogQuest Skill 自循环 Review 报告
 
 **Review 日期**: 2026-10-12  
 **Review 轮次**: 3 轮  
@@ -194,7 +194,7 @@
 
 ✓ **Review 通过**
 
-LogScope Skill 实现完整，质量高，可以投入使用。
+LogQuest Skill 实现完整，质量高，可以投入使用。
 
 主要优势：
 - 架构设计系统化

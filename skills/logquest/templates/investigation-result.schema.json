@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Investigation Result",
-  "description": "LogScope 调查结果 Schema",
+  "description": "LogQuest 调查结果 Schema",
   "type": "object",
   "required": [
     "investigation_id",

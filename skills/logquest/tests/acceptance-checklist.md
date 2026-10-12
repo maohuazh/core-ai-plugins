@@ -1,8 +1,8 @@
-# LogScope Skill 验收清单
+# LogQuest Skill 验收清单
 
 ## 概述
 
-本文档定义了 LogScope 日志根因分析 Skill 的验收标准。所有验收项必须通过后，才能将 Skill 投入生产使用。
+本文档定义了 LogQuest 日志根因分析 Skill 的验收标准。所有验收项必须通过后，才能将 Skill 投入生产使用。
 
 ---
 
@@ -315,7 +315,7 @@
 ```
 验收报告
 
-Skill 名称：LogScope 日志根因分析 Skill
+Skill 名称：LogQuest 日志根因分析 Skill
 验收日期：YYYY-MM-DD
 验收人员：[姓名]
 

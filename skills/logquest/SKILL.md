@@ -1,5 +1,5 @@
 ---
-name: logscope
+name: logquest
 description: 
   日志根因分析技能。基于证据驱动的方法，通过跨服务日志关联、假设验证和数据库只读查询，
   识别生产故障的根本原因。支持双索引架构（action + trace），生成包含根因分类、证据引用、
@@ -7,7 +7,7 @@ description:
 disable: true
 ---
 
-# LogScope 日志根因分析 Skill
+# LogQuest 日志根因分析 Skill
 
 ## 角色定义
 
